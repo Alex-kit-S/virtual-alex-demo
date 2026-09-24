@@ -1,0 +1,33 @@
+{
+  "_read_me_first": "This is a MENU, not a config. Nothing here is switched on. Copy the servers you actually want into your own ~/.claude.json and replace every YOUR_..._HERE placeholder with your own key. Added 2026-08-23 (run-47 P6.5).",
+  "_why_it_is_a_menu": "Alex's own MCP setup cannot be shipped to you: those are the author's accounts, keys and machine paths, and a committed config would be both useless to you and a credential leak for the author. So the Kit ships the SHAPE and you supply the accounts.",
+  "_keep_it_small": "Every enabled server costs context in every session, whether or not you use it. Ten is a sensible ceiling. Start with none, add one when you actually need it, and remove any you stopped using - an unused server is pure overhead.",
+  "_no_keys_in_this_repo": "Never paste a real key into this file or any other file in this folder. This folder is version-controlled and updates overwrite it. Keys belong in ~/.claude.json, which is yours alone and never travels.",
+  "mcpServers": {
+    "notion": {
+      "_what": "Read and write your Notion pages and databases.",
+      "_get_a_key": "notion.so > Settings > Connections > develop or manage integrations",
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": { "NOTION_TOKEN": "YOUR_NOTION_TOKEN_HERE" }
+    },
+    "context7": {
+      "_what": "Up-to-date documentation for libraries and frameworks. Useful if you write code; harmless otherwise.",
+      "_get_a_key": "not needed",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "playwright": {
+      "_what": "Lets Alex drive a real browser for sites that have no proper API.",
+      "_get_a_key": "not needed",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "filesystem": {
+      "_what": "Read and write files in ONE folder you name. Point it at a project folder, never at your whole drive.",
+      "_get_a_key": "not needed",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "YOUR_FOLDER_PATH_HERE"]
+    }
+  }
+}

@@ -1,0 +1,157 @@
+# VIRTUAL ALEX VARIANT of the Kit's .gitignore. scripts/build-online-template.mjs copies it into the online template as the tree's .gitignore; the Kit's own .gitignore is not read there.
+# The repo is PRIVATE and IS the disk: online there is no machine and no nightly backup, so an ignored memory file is lost every session. vault/, soul.md, soul-core.md, the system/ queues and install state, lane state, outputs/ and .claude/skills/ are therefore TRACKED here.
+# What stays out, and why: secrets and credential folders (history is forever, and a private repo is one leaked token from public); derived and regenerable files (search index, locks, generated plists and tokens, backup siblings); raw streams and media (logs, voice and typed transcripts, video, audio); and raw landing zones (inbox/, raw forwarded mail) whose durable form is the vault page a lane writes.
+# Kit maintainers: while this file sits under variants/online/ git also reads it as a nested .gitignore for that directory, so a rule here ignores the same path under variants/online/. Nothing there matches today; check with git check-ignore -v before adding a rule that could.
+
+# === SECRETS - never commit; if one is ever staged or pushed, rotate it immediately ===
+# A project's keys, tokens and passwords live in its work/NN-*/config/ folder, ignored whole by the
+# credential-folder rules further down (work/*/config/ and its name variants).
+.claude/settings.local.json
+.env
+.env.local
+*.key
+*.dpapi
+
+# Chrome user-data profile (cookies, session tokens)
+**/.browser-profile/
+
+# === dependencies / build artifacts ===
+node_modules/
+.next/
+venv/
+.venv/
+work/voice/.venv/
+__pycache__/
+*.pyc
+
+# Lane state is lane memory online, so the Kit's work/*/state/ class deny is gone and what stays out is
+# named: the raw forwarded booking emails trip-ops banks whole, and the raw draft text of email-triage.
+# The sender tally and the important-thread ledger beside it are memory and are tracked; the
+# staged-draft ledger is that raw draft text and is not (so online the sent-vs-draft loop cannot compare
+# a draft staged in one session with the mail sent after it). Approved sender rules live in the tracked
+# rules.md, because work/*/config/ below is never committed.
+work/29-trip-ops/state/
+work/07-email-triage/state/staged-drafts.json
+
+# Vault-search FTS5 index: derived from vault/**/*.md, rebuilt on the first search of a session.
+scripts/vault-index/
+
+# Recall Spine data: SQLite never enters git (a WAL-mode file without its journal is a torn snapshot) and
+# the per-prompt telemetry has no reproducible value. The code under system/recall/ ships.
+system/recall/*.db
+system/recall/*.db-wal
+system/recall/*.db-shm
+system/recall/*.jsonl
+
+# === outputs/ is TRACKED online (deliverables live where the disk lives), minus streams and media ===
+# outputs/logs/* rather than outputs/logs/: git cannot re-include a file whose parent directory is
+# excluded, and the lane guard's block log is the one log that is evidence rather than a stream.
+outputs/logs/*
+!outputs/logs/untrusted-lane-blocks.jsonl
+outputs/voice/
+outputs/typed/
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.m4a
+
+# === runtime artifacts / OS noise ===
+.claude/scheduled_tasks.lock
+*.log
+*.tmp
+nul
+Thumbs.db
+.DS_Store
+
+# Obsidian internals (device-local UI state; online the vault is read on github.com)
+.obsidian/
+vault/.obsidian/
+
+# Power BI project local cache
+**/.pbi/cache.abf
+**/.pbi/localSettings.json
+
+# === credential folders and build exports: NEVER, whatever the repo's visibility ===
+work/*/config/
+work/*/export/
+work/*/build/
+docs/n8n/*/workflow.json
+work/*/configs/
+work/*/config-*/
+work/*/secrets/
+
+# Classes the Kit's own file keeps out, named by class rather than by one project's path: a dashboard's
+# generated data and QA captures, its focus-slot copies of the waiting-on-you queue, a stale metrics dump,
+# a spreadsheet builder that hard-codes real figures, workflow backups, Power BI exports, call audio, old
+# brand binaries, and raw text dumps at the root. A rule for a path that never exists costs nothing.
+work/*/app/public/data/
+work/*/qa/shots/
+work/*/state/focus.json
+work/*/state/last-focus.json
+hq-summary.json
+work/*/build_workbook.py
+scripts/n8n-backups/
+work/*/powerbi/*.xlsx
+work/*/powerbi/*.csv
+work/06-meeting-intel/processed/
+brand/archive/
+/*.txt
+
+# === system/ is TRACKED online: the queues (human-actions, pending-writes, waiting-on-them), the install
+# profile and state, the migrations stamp, travel-state, the run log and the rotate journal are all memory.
+# What stays out is named: the credential map (it points at machine locations that do not exist online),
+# the quota and cost state (a gate with no online twin), two telemetry logs, and the personal-data
+# scanner's allowlist (config for a scanner whose premise, a public repo, does not hold here).
+system/credentials-ledger.json
+system/quota-state.json
+system/cost-tripwires.json
+system/vault-reads.jsonl
+system/heal-log.jsonl
+system/personal-data-allowlist.json
+
+# Backup siblings, anywhere: a copy of a personal file is exactly as personal, and 143 KB of identity
+# doubled in history is waste.
+*.bak
+*.bak-*
+*.backup
+*.backup-*
+*.orig
+*~
+system/*.jsonl.bak
+system/*.jsonl.backup*
+system/*.jsonl.bak-*
+
+# soul.md is TRACKED online. Its dated copies and variants stay out. The compiled card soul-core.md is the
+# one sibling that is memory, and it is re-included AFTER the pattern that swallows it: soul-*.md matches
+# soul-core.md, and a re-include only works when it comes later in the file.
+soul.md.*
+soul-*.md
+!soul-core.md
+soul.*.md
+
+# Raw-source landing zones: nothing sits in an inbox across sessions online; /ingest moves what is worth
+# keeping into vault/sources/, which is tracked.
+inbox/*
+!inbox/.gitkeep
+work/*/inbox/*
+!work/*/inbox/README.md
+
+# Per-project raw, cache, processed and output folders: raw landing, cache, call audio with transcripts,
+# and a second home for deliverables that outputs/ already is. work/*/data/ is TRACKED online: per-project
+# data is the memory class.
+work/*/raw/
+work/*/cache/
+work/*/processed/
+work/*/output/
+
+# Generator staging and write locks: never committed anywhere.
+.staging/
+.staging-backup/
+.skills-install.lock/
+.alex-lock-*/
+
+# Generated for a machine that does not exist online: launchd plists (from scheduler/schedule.md) and the
+# brand tokens CSS (from brand/tokens/tokens.json). Both regenerate in-session when needed.
+launchd/
+brand/tokens/tokens.css

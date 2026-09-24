@@ -1,0 +1,494 @@
+{
+  "_what": "The Kit's declarative ship-set. Every path this Kit delivers is claimed by exactly one component row, with WHY it ships and whether it needs a migration to reach an installed copy. Added 2026-08-23 by the run-47 merged plan (P6.3).",
+  "_why": "Until now the ship-set was implicit - 'whatever git happens to track' - plus prose in vault/projects/alex-kit/ported.md. That is fine while one person remembers everything and fails the moment a path is added without a decision being recorded. This file makes the PORT/DROP decision a data row a checker can read, and makes a deliberate skip indistinguishable from an oversight impossible: the skip has a row saying so.",
+  "_the_trap_this_encodes": "soul.md is gitignored, so git delivers TRACKED FILES ONLY. Any change to identity, voice or anything else git cannot carry reaches an installed copy ONLY through scripts/migrations/NNN-*.js. A component marked needs_migration:true that ships without one silently never arrives, and the install keeps looking completely normal. That is the single most expensive failure mode this Kit has. Online (Virtual Alex) the trap inverts: soul.md is tracked in the owner's private repo and git carries everything, and the online field below is what decides what the template carries.",
+  "_online_field": "Added 2026-09-22 for Virtual Alex, the Kit running inside a Claude Code cloud session. Every component row carries online: ship (its paths are copied from this Kit as they are), drop (absent from the online tree) or variant (replaced by the file or subtree under variants/online/<same path>; the Kit's own content at that path is not read). scripts/build-online-template.mjs is the reader. It refuses to build (exit 2) on a row without a value, on a tracked path no row claims, and on a path two rows claim at the same specificity; where a file sits under a directory row and is also named exactly by another row, the exact claim wins. A listed path that does not exist is reported, never fatal, because several online-only files are listed before they are written. The claim 'every path is claimed by exactly one row' was prose until this date; the generator is the first thing that checks it.",
+  "version": 2,
+  "updated": "2026-09-24",
+  "json_standard": {
+    "doc": "docs/json-standard.md",
+    "enforced": [
+      "system/employer-data-allowlist.json",
+      "system/migrations-applied.json",
+      "system/fleet.json",
+      "system/install-profile.example.json"
+    ],
+    "note": "The contract validate-alex V21 and 'node scripts/json-standard-audit.js --enforced' both read (one parser, parseContract in the audit, so the two can never disagree about the list). enforced[] is the SCOPE, deliberately narrow: a path joins it in the same commit that moves its writer onto scripts/lib/json-writer.js, never before, which makes the check a ratchet that cannot regress a migrated file and never blocks an unmigrated one. WHY HERE AND NOT system/manifest.json, where the upstream standard keeps it: manifest.json is the owner's project registry, and /new edits it on every install, so a Kit release that adds a path to a list inside it would be editing a file every owner has already changed, which is how an update conflicts. This file is the Kit's own and no install edits it, so a new enforced path arrives with the writer that earned it. Upstream it is manifest.json because there is only one owner. A missing list is a FAILURE in both readers, never a pass."
+  },
+  "components": [
+    {
+      "id": "constitution",
+      "paths": [
+        "CLAUDE.md",
+        "soul-core.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "The rulebook, with the author's own lanes and projects stripped. Delivered by git; a reader gets it on the next Update-Alex.cmd. Online: CLAUDE.md is a variant (the Session Root section and the identity-loading sentence differ inside a cloud session), and soul-core.md is never a template path, the owner's /setup session builds and commits it."
+    },
+    {
+      "id": "identity-template",
+      "paths": [
+        "templates/soul.template.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": true,
+      "online": "ship",
+      "note": "The owner's real soul.md is gitignored and personal. Improvements to the TEMPLATE reach an existing install only through a migration, because their live file is never overwritten by an update. Online the same migration contract runs inside /update."
+    },
+    {
+      "id": "runner-scripts",
+      "paths": [
+        "scripts/"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "Includes kit-doctor.js, run-migrations.js, the cross-platform doctor bootstrap.mjs and the template generator build-online-template.mjs. Plain code, delivered by git. Until 2026-09-22 this row also claimed the scheduled-job layer and both launcher trios; they moved to local-wrappers and launchers because they carry a different online decision (drop) and one row holds one decision. Paths named exactly by those rows win over this directory claim, as does online-pre-commit for scripts/hooks/pre-commit (2026-09-23)."
+    },
+    {
+      "id": "launchers",
+      "paths": [
+        "Install-Alex.cmd",
+        "Update-Alex.cmd",
+        "Start-Here.cmd",
+        "Install-Alex.command",
+        "Update-Alex.command",
+        "Start-Here.command"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "drop",
+      "note": "BOTH launcher trios: .cmd for Windows, .command for macOS (2026-08-31 port). Delivered by git on a machine install. Online there is no machine: nothing installs, /update replaces Update-Alex, and the entry point is the claude.ai link the owner taps."
+    },
+    {
+      "id": "local-wrappers",
+      "paths": [
+        "scripts/run-job.mjs",
+        "scripts/vault-backup.mjs",
+        "launchd/",
+        "scripts/auth-check.ps1",
+        "scripts/bootstrap.ps1",
+        "scripts/git-backup.ps1",
+        "scripts/lib/close-out.ps1",
+        "scripts/lib/run-status.ps1",
+        "scripts/lib/soul-canary.ps1",
+        "scripts/run-email-triage.ps1",
+        "scripts/run-lint.ps1",
+        "scripts/run-morning-brief.ps1",
+        "scripts/run-radar.ps1",
+        "scripts/run-self-review.ps1",
+        "scripts/run-vault-index.ps1",
+        "scripts/tests/test-completion-sentinel.ps1",
+        "scripts/tests/test-soul-canary-live.ps1",
+        "scripts/tests/test-soul-canary.ps1",
+        "scripts/vault-backup.ps1",
+        "work/18-recovery-layer/check.ps1",
+        "work/18-recovery-layer/escrow-test.ps1",
+        "work/18-recovery-layer/security-sweep.ps1"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "drop",
+      "note": "The scheduled-job layer of a machine install: run-job.mjs is what every Task Scheduler and launchd job calls, vault-backup.mjs is the encrypted off-machine copy, the 19 .ps1 files are the Windows wrappers, the recovery sweep and their tests (PowerShell does not exist on the cloud VM), and launchd/ is generated per machine and gitignored, listed so the online decision is a row and not an inference. Online the Routines are the scheduler and the second copy is a mirror repo."
+    },
+    {
+      "id": "skills",
+      "paths": [
+        ".agents/skills/",
+        "skills-lock.json"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "Bundled skills plus the tamper baseline. The .claude/skills junctions are machine-local and are rebuilt by bootstrap.ps1 -RepairJunctions, which kit-doctor calls when they go missing. Online .claude/skills/ is un-ignored and the links are committed by the owner's first cloud session; the template never carries them, because a Windows checkout cannot make symlinks and the generator never writes a link."
+    },
+    {
+      "id": "brand",
+      "paths": [
+        "brand/"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The product's own ALEX brand ships as every owner's default: the palette law (brand/config/color-system.md), the logo (brand/images/) and the type rules (brand/config/brand-config.md). /brand replaces it with the owner's own logo, colours and fonts. What does not ship is the author's personal material: his own decks and his LinkedIn series' locked diagram system."
+    },
+    {
+      "id": "docs",
+      "paths": [
+        "docs/",
+        "templates/",
+        "THIRD-PARTY-NOTICES.md",
+        "LICENSE"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "Getting-started material and licence obligations."
+    },
+    {
+      "id": "docs-readme",
+      "paths": [
+        "docs/README.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "The docs folder's welcome page (fleet review finding F32, Fix E, 2026-09-24). Variant because the laptop page sends its reader to GETTING-STARTED.md and /status, while online the page to follow is INSTALL-ONLINE.md and the command is /alex-status, which the web page's own /status would otherwise swallow. Not dropped: validate-alex G3 requires the page and scripts/lib/gen-docs.js throws without it, so an owner's /setup, which runs the generator, would fail. In both worlds the generator keeps the welcome block between CUSTOM_START and CUSTOM_END verbatim and refreshes only the part below it. An exact path beats the docs/ directory row."
+    },
+    {
+      "id": "scheduler",
+      "paths": [
+        "scheduler/"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "Job definitions with the author's personal lanes removed. Online a variant: scheduler/schedule.md and scheduler/README.md come from variants/online/scheduler/ and describe the five Routines; the prompt files under scheduler/routines/ are claimed by their own ship row (a longer prefix beats this directory claim), so the same committed orders ship to both trees."
+    },
+    {
+      "id": "routines",
+      "paths": [
+        "scheduler/routines/"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The five Routine prompt files for Virtual Alex (triage, brief, radar, housekeeping, snapshot), added 2026-09-23 (plan Phase 4). Each is the order a Routine carries out; the form on claude.ai holds one line pointing at it. Ships as is from this Kit: the files are the same on both trees, the schedule around them is not (system/manifest.json routines[] rows, rendered into docs/ROUTINES-FORMS.md by the generator). Claimed here, not by the scheduler variant row, because a variant claim never reads the Kit path and these files have no online twin to read."
+    },
+    {
+      "id": "install-state",
+      "paths": [
+        "system/install-state.json",
+        "system/migrations-applied.json",
+        "system/install-profile.json"
+      ],
+      "kind": "machine-local",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "Machine-local state, never shipped as content. Since 2026-08-31 the update stamp lives in system/install-state.json (gitignored, written by Update-Alex + seeded by migration 002); the tracked VERSION file is upstream's RELEASE marker only and is no longer written on the installed machine - the old local stamping kept the tree permanently dirty and armed a stash-pop dead end. install-profile.json is this machine's skill/lane/locale choices (see the .example). Online the three state files COMMIT in the owner's repo: the repo is the machine, so per-repo state is per-person state and cannot collide with anyone. The template still never carries them (gitignored here, so absent from the ship set, and reported as absent by the generator). VERSION left this row on 2026-09-24 (fleet Fix A, review finding F44): it is the laptop release marker here, and online the build renders its own from the changelog (row online-changelog)."
+    },
+    {
+      "id": "ci",
+      "paths": [
+        ".github/"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "Two-OS CI (windows-latest for the installed translator machines, macos-latest since 2026-08-31 as the only pre-install Mac test rig). Was an unclaimed path before 2026-08-31; every delivered path needs an owner row. Online a variant with one Ubuntu job, because the Windows and macOS steps run PowerShell and launcher checks that do not exist in the online tree, and the job runs only inside the template org so an owner's autosave pushes never spend their Actions minutes."
+    },
+    {
+      "id": "install-profile-example",
+      "paths": [
+        "system/install-profile.example.json"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The documented SHAPE of a per-install profile (wake/park/lanes/locale). The real system/install-profile.json is machine-local and gitignored: per-person choices must never live in tracked files, or updates conflict on them. Since 2026-09-24 (fleet Fix D, F11) the example is written ONLY by 'node scripts/lib/install-profile.js --write-example', in the JSON standard's shape (install-profile@1, whose lanes map is the standard's one declared identifier map), and it is on json_standard.enforced[]. The shape's documentation moved from the old _what/_how/_lanes/_radar keys into that script's header."
+    },
+    {
+      "id": "radar",
+      "paths": [
+        "work/15-radar/",
+        ".claude/commands/radar.md",
+        "docs/projects/15-radar.md",
+        "scripts/lib/radar-feeds.js",
+        "scripts/tests/test-radar-feeds.mjs"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "#15 Radar, ported 2026-09-20 from the donor's server-backed version with the collector, urgent lane, dashboard push and paid scrape lane dropped. Delivered by git. The TEMPLATE ships no feeds and no opinions: work/15-radar/seeds/ carries deliberately-empty memory files, and the feed list lives per-install in system/install-profile.json (radar.feeds, gitignored, shape in install-profile.example.json). needs_migration is false because every path here is tracked and a fresh Update-Alex.cmd delivers it; the two things that do NOT arrive that way are the owner's vault/projects/radar/ memory (created by /radar step 1 from the seeds, never overwritten) and their own feed list, and neither is a thing an update should ever write. scripts/run-radar.ps1 left this row on 2026-09-22: it is claimed by local-wrappers, and a path is claimed once."
+    },
+    {
+      "id": "commands",
+      "paths": [
+        ".claude/commands/"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The slash commands. Unclaimed until 2026-09-22: every delivered path needs an owner row, and the online generator refuses a tracked path no row claims. radar.md, update.md, setup.md and support-bundle.md are named exactly by their own rows."
+    },
+    {
+      "id": "online-setup",
+      "paths": [
+        ".claude/commands/setup.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "/setup for Virtual Alex, from variants/online/.claude/commands/setup.md (2026-09-22, plan Phase 2): reads the committed seed first and takes the rest in chat, hexes in chat, no Obsidian step, the passphrase chain replaced by the backup repository and the data-privacy step, confirms 2FA, the App on both repositories, sharing verification and personal Gmail, records employer_domain and owner_work_address into the install profile, builds the card and saves through the autosave. An exact path beats the commands directory row, so the Kit's setup.md is not read for the online tree."
+    },
+    {
+      "id": "online-support-bundle",
+      "paths": [
+        ".claude/commands/support-bundle.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "/support-bundle for Virtual Alex, from variants/online/.claude/commands/support-bundle.md (2026-09-23, plan Phase 5): one page at outputs/support/<date>.md, saved by the autosave and printed into the chat with the redaction report first; the last 20 run-log rows, the sweep, the version, the install state, the lock hash, the last ten commit subjects, the environment name and the /skills list, never a vault line beyond the sweep. No zip, no log directory, no launchctl or rclone lines, and the session share link is never the support path. An exact path beats the commands directory row, so the Kit's support-bundle.md is not read for the online tree."
+    },
+    {
+      "id": "online-status-command",
+      "paths": [
+        ".claude/commands/alex-status.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "/alex-status, online only, from variants/online/.claude/commands/alex-status.md (2026-09-23, fleet seat 1). The claude.ai web session has a built-in /status of its own: typing /status in a cloud session answers 'Session info is available once the session starts' and Alex's command file is never read (measured on the first real install, 2026-09-23). This row adds the renamed command; .claude/commands/status.md still ships and is where the behaviour is written, in ONE copy, which this file sends the reader to. The Kit has no alex-status.md of its own and does not need one: a variant row lands any tracked file under variants/online/ at its real path whether or not the Kit carries that path."
+    },
+    {
+      "id": "online-pre-commit",
+      "paths": [
+        "scripts/hooks/pre-commit"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "The commit gate for Virtual Alex, from variants/online/scripts/hooks/pre-commit (2026-09-23, plan Phase 3): secret-scan, the size guard, employer-data-guard in the slot personal-data-scan holds on a laptop (its public-repo premise inverts on a private repo that IS the vault), clone-scrub, validate-alex with the drift legs warning under CLAUDE_CODE_REMOTE. No gitleaks leg: the binary is never on the VM. An exact path beats the scripts/ directory row, so the Kit's own hook is not read for the online tree. Mode 100755 in the index so the generator replays it executable."
+    },
+    {
+      "id": "claude-settings",
+      "paths": [
+        ".claude/settings.json"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "Hooks and permissions. Online a variant: the autosave hooks, the deny list and the env block only make sense inside a cloud session."
+    },
+    {
+      "id": "gitignore",
+      "paths": [
+        ".gitignore"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "Here the barrier is deny-by-class, because the failure is publication. Online the failure is loss, so the variant flips the two class denies and names what stays out, path by path."
+    },
+    {
+      "id": "repo-config",
+      "paths": [
+        ".gitattributes"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The line-ending law. Plain config, delivered by git. The gitleaks config moved to its own row, online-gitleaks, on 2026-09-24."
+    },
+    {
+      "id": "system-config",
+      "paths": [
+        "system/manifest.json",
+        "system/kit-manifest.json",
+        "system/environment-schema.json",
+        "system/environment-schema.online.json",
+        "system/employer-data-allowlist.json",
+        "system/skills-sources.json",
+        "system/mcp-catalog.example.json"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The tracked configuration under system/: the project registry, this ship-set, the environment schema and its cloud twin (environment-schema.online.json, loaded by bootstrap.mjs under CLAUDE_CODE_REMOTE=true), the employer-data guard's allowlist (since 2026-09-23, written only through scripts/employer-data-guard.mjs; the clone-scrub allowlist moved to row donor-scrub on 2026-09-24), the skill sources and the MCP menu. Everything else under system/ is per-install state and is gitignored here."
+    },
+    {
+      "id": "recall",
+      "paths": [
+        "system/recall/"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The Recall Spine code (harvesters, the fact ledger library, the prompt-time injector). Its data files are gitignored on every platform. Ships online but is inert there: the recall-inject hook line is absent from the online settings and no harvester is scheduled."
+    },
+    {
+      "id": "lanes",
+      "paths": [
+        "work/"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The lane specs (work/NN/CLAUDE.md), the research-team patterns and squads, the triage rules and the close-out grader. work/15-radar/ has its own row; the PowerShell under work/18-recovery-layer/ is claimed by local-wrappers."
+    },
+    {
+      "id": "inbox",
+      "paths": [
+        "inbox/"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The raw-source landing zone, tracked as an empty directory (.gitkeep). Its contents are gitignored on every platform."
+    },
+    {
+      "id": "online-variants",
+      "paths": [
+        "variants/"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "drop",
+      "note": "The online replacements for every variant row, read by scripts/build-online-template.mjs. The directory itself never ships: each file lands at its real path in the online tree. A file under variants/online/ whose row is not variant refuses the build, because a replacement nobody reads is a silent miss."
+    },
+    {
+      "id": "online-install",
+      "paths": [
+        "INSTALL-ONLINE.md",
+        "docs/ROUTINES-FORMS.md",
+        "system/template-changelog.jsonl"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "Virtual Alex's install guide, the Routine forms page and the template changelog (one row per pushed build, appended by the generator and re-included in .gitignore by name). All three exist since 2026-09-23 (the guide from plan Phase 5, the forms page rendered by the generator from the routines[] rows); the generator reports an absent listed path instead of failing, which is how the row was carried before they were written."
+    },
+    {
+      "id": "online-changelog",
+      "paths": [
+        "CHANGELOG.md",
+        "VERSION",
+        "system/template-source.json"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "drop",
+      "note": "The template CHANGELOG.md is GENERATED at build time from system/template-changelog.jsonl (scripts/lib/render-changelog.mjs, called by scripts/build-online-template.mjs on every template and seed build) and exists only in generated trees. This row claims the root path as drop so that a CHANGELOG.md the Kit may one day track for itself never ships over the generated one; a variant file at that path is already refused by the generator (a file under variants/online/ whose row is not variant). scripts/tests/test-changelog.mjs fails any tree whose CHANGELOG.md disagrees with its jsonl. Added 2026-09-24, fleet seat 6. Two more generated paths joined it the same day (fleet Fix A): VERSION, rendered from the same jsonl so it names the build the tree is (the Kit's VERSION is the laptop release marker and is not shipped over it), and system/template-source.json, the template /update fetches from, written through scripts/lib/json-writer.js (gitignored here by the system/* class deny, so it cannot be committed in the Kit by accident). It is deliberately not in json_standard.enforced[]: it exists only in generated trees, so enforcing it would print a permanent enforced-but-absent warning in the Kit (the F15 class) and guard nothing, because its one writer is the build."
+    },
+    {
+      "id": "front-door",
+      "paths": [
+        "README.md",
+        "SECURITY.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "The two pages a stranger opens first: the root README (what this is, who it is for, the one next step) and SECURITY.md (each safeguard, what it stops, how to report a problem). Variant because the laptop Kit and Virtual Alex differ on both: the README points at a different first step, and the two versions carry different safeguards (no deny list on the laptop, no encrypted Drive copy online). Both SECURITY.md files end with the same side-by-side table, so a reader of either sees which safeguard exists where. Added 2026-09-24, fleet seat 6."
+    },
+    {
+      "id": "online-commands",
+      "paths": [
+        ".claude/commands/update.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "/update, the online replacement for Update-Alex: the template's delta applied as the owner's own commit (written 2026-09-23, plan Phase 5). Ships from the Kit path as is: on a laptop the command still reads correctly as a description of what the online twin does, and the laptop's own path is Update-Alex."
+    },
+    {
+      "id": "online-drop-cron-setup",
+      "paths": [
+        ".claude/commands/cron-setup.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "drop",
+      "note": "/cron-setup is meaningless online and is dropped from the template by this row rather than by deleting the file (2026-09-23, fleet seat 1). It registers a local scheduler job (Windows Task Scheduler, launchd or systemd); a cloud session has none of the three, and the online schedule is Routines created in the claude.ai app, which the owner makes by hand from docs/ROUTINES-FORMS.md. Shipping it online offered the owner a command whose every path fails. An exact path beats the .claude/commands/ directory row, so the file stays on the laptop and is absent from the online tree."
+    },
+    {
+      "id": "fleet",
+      "paths": [
+        "docs/SEED-CONTRACT.md",
+        "scripts/seed-contract-check.mjs",
+        "scripts/tests/test-seed-contract.mjs",
+        "docs/FLEET.md",
+        "scripts/new-virtual-alex.mjs",
+        "scripts/tests/test-new-virtual-alex.mjs",
+        "system/fleet.json"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "drop",
+      "note": "The operator's tooling for the Virtual Alex fleet (2026-09-24, fleet seat 4): the seed contract and its checker, the fleet script, their tests and the two docs, plus system/fleet.json, the fleet record. All of it runs on the operator's machine and nowhere else. Dropped online because an owner's repository has no fleet to manage, and because the record names every owner, which is exactly what one owner's tree may not carry. system/fleet.json is also gitignored here by the system/ default-deny and must stay so: every family laptop merges this Kit's main, so a tracked record would put every owner's name on every laptop. It is listed so the online decision is a row and not an inference; the generator reports it ABSENT."
+    },
+    {
+      "id": "online-gitleaks",
+      "paths": [
+        ".gitleaks.toml"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "variant",
+      "note": "The gitleaks config (2026-09-24, fleet seat 7). Variant because the canary rule's premise differs: on a laptop soul.md is gitignored, so the soul.md canary token in any tracked file is a leak; online the repository IS the disk and soul.md and soul-core.md are tracked by design, so every owner's repository was a gitleaks finding on its own identity file. The online file exempts exactly those two root paths from that one rule, keeps every other rule scanning them, and drops an allowlist entry for a credential reference the online tree never contains. Negative-tested with gitleaks 8.30.1 on an owner-shaped tree: 4 findings under the laptop file, 0 under the variant, and a token pasted into another file, a soul.md in a subfolder and a GitHub token inside soul.md all still fire."
+    },
+    {
+      "id": "donor-scrub",
+      "paths": [
+        "scripts/clone-scrub-check.js",
+        "system/clone-scrub-allowlist.json",
+        "scripts/tests/test-clone-scrub-scope.mjs"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "drop",
+      "note": "The donor-identity scan, its reviewed exceptions and its test (2026-09-24, fleet seat 7). The scanner hunts the Kit author's identity, so its patterns ARE that identity: a public template cannot carry it without publishing what it hunts. Dropped online, and run at BUILD time instead: scripts/build-online-template.mjs donorScrub() scans every generated tree's staged index before --check reports or --push commits, and refuses on a hit. The laptop Kit keeps all three: the pre-commit hook runs the scanner and both Kit CI jobs run it and its test. The online commit gate never ran it (removed on test day, 2026-09-23, because an owner's own record may name anyone)."
+    },
+    {
+      "id": "seed",
+      "paths": [
+        "starter/",
+        "HOW-SHARING-WORKS.md",
+        "WHAT-ALEX-CAN-DO.md"
+      ],
+      "kind": "generalized",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "One person's seed material: starter/ (ABOUT-<NAME>.md in the owner's own words, and the install-profile.json Install-Alex places) plus the two owner docs written for that install. None of it exists in the Kit, so the generator reports the row ABSENT on every generic build; it exists in a seed-born tree (scripts/build-online-template.mjs --seed copies it in) and in every laptop install. Claimed here (added 2026-09-23, seat 7) because the generator's live proof (test-build-online-template.mjs P4) runs in the seed repository's own CI and refused its tree on exactly these paths. INSTALL-<NAME>.md is deliberately NOT here: it is the laptop install guide, --seed never copies it, and a laptop tree that carries it fails P4 until the Kit decides what that file is online (a glob claim does not exist; the manifest claims exact names and directories)."
+    }
+  ],
+  "deliberately_not_shipped": [
+    {
+      "what": "soul.md",
+      "why": "The owner's real identity and voice corpus. Personal by definition; each install grows its own. Online it is tracked in the owner's private repo, which is why the online template is a separate repo."
+    },
+    {
+      "what": "vault/",
+      "why": "Personal knowledge. Never leaves its machine. Online it is tracked in the owner's private repo, which is why the online template is a separate repo."
+    },
+    {
+      "what": "Cloudflare / n8n / Notion credentials and MCP config",
+      "why": "Accounts the author owns; the family has no such accounts to authenticate against. No .mcp.json is tracked in this Kit (checked with git ls-files on 2026-09-23; the earlier sentence here said one was committed, and it was stale): connectors are attached per account on claude.ai, and system/mcp-catalog.example.json is the copy-what-you-need shape for anyone adding a server by hand. Online, credentials live in the cloud environment's variables and never in the repo."
+    },
+    {
+      "what": "graphify skill",
+      "why": "Dropped 2026-08-17: it self-installs a PyPI package from prose. Re-confirmed by run 47, whose installer gate would now refuse it outright."
+    },
+    {
+      "what": "system/install-profile.json + system/install-state.json",
+      "why": "Per-machine state by design. The profile is the owner's own wake/park/lane/locale choices; the state file is the update record. Tracking either would put per-person divergence into files git merges, which is the exact failure the profile layer exists to avoid. Online both commit in the owner's repo: the repo is the one person's machine, so the divergence this row guards against cannot happen there."
+    },
+    {
+      "what": "launchd/ (online)",
+      "why": "Generated per machine from scheduler/schedule.md and gitignored everywhere. Online there is no machine, and the five Routines are the scheduler."
+    },
+    {
+      "what": "Install-Alex.cmd, Install-Alex.command, Start-Here.cmd, Start-Here.command (online)",
+      "why": "Online nothing is installed and nothing starts locally: the entry point is the claude.ai link the owner taps, and the first session runs /setup."
+    },
+    {
+      "what": "Update-Alex.cmd, Update-Alex.command (online)",
+      "why": "Replaced online by /update, which applies the template's delta as the owner's own commit and never merges a foreign author into their history."
+    },
+    {
+      "what": "The passphrase chain: vault-backup.mjs, vault-backup.ps1, gpg, rclone (online)",
+      "why": "Online the second copy is a mirror repo fed by a weekly Routine. There is no passphrase to hold and no machine to hold it on; what is lost with it, an encrypted copy no account lockout can touch, is stated in the online install guide."
+    },
+    {
+      "what": "whisper and ffmpeg (online)",
+      "why": "Multi-gigabyte and optional here with a stated fallback. Online they are absent, and an audio file is reported as skipped with a plain sentence, never a silent failure."
+    },
+    {
+      "what": "python-docx",
+      "why": "Removed from environment-schema.json on 2026-09-22, Kit-wide: nothing in the Kit imports it, so it was a permanent false MISS on every install, and a report that always shows a MISS is a report nobody reads."
+    }
+  ]
+}

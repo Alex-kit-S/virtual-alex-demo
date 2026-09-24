@@ -1,0 +1,13 @@
+{
+  "_generated_at": "2026-09-24T07:00:41Z",
+  "_purpose": "Which numbered migrations have run on this copy, so that each one runs exactly once.",
+  "_schema": "migrations-applied@1",
+  "_writer": "scripts/run-migrations.js",
+  "applied": [
+    {
+      "date": "2026-09-24",
+      "id": "001-structural-voice-tells",
+      "status": "applied"
+    }
+  ]
+}

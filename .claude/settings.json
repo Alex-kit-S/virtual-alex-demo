@@ -1,0 +1,104 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(echo *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(node *)",
+      "Bash(npm *)",
+      "Bash(shasum *)",
+      "Bash(awk *)",
+      "Bash(cut *)",
+      "Bash(wc *)",
+      "Bash(mv *)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(source *)"
+    ],
+    "deny": [
+      "mcp__*__send_message",
+      "mcp__*__reply",
+      "mcp__*__forward",
+      "mcp__*__share_file",
+      "mcp__*__trash_*",
+      "mcp__*__delete_*",
+      "mcp__*__create_event",
+      "mcp__*__update_event",
+      "mcp__*__respond_to_event",
+      "mcp__*__notion-send-message-to-session",
+      "mcp__*__notion-spawn-session",
+      "Edit(/.claude/settings.json)",
+      "Edit(/.claude/commands/**)",
+      "Edit(/scripts/hooks/**)",
+      "Edit(/scripts/lib/**)",
+      "Edit(/.github/workflows/**)",
+      "Edit(/.mcp.json)",
+      "Edit(/system/soul-pins.json)",
+      "Edit(/skills-lock.json)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|WebFetch|WebSearch|Write|Edit|MultiEdit|NotebookEdit|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$ALEX_UNTRUSTED_LANE$ALEX_ROUTINE\" ]; then node \"${CLAUDE_PROJECT_DIR:-.}/scripts/untrusted-lane-guard.js\"; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/autosave.sh\" --json; fi"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PD=\"${CLAUDE_PROJECT_DIR:-.}\"; bash \"$PD/scripts/lib/session-branch.sh\"; node \"$PD/scripts/lib/cli-version.js\" 2>/dev/null; git -C \"$PD\" config core.hooksPath scripts/hooks; node \"$PD/scripts/lib/build-soul-core.js\" >/dev/null 2>&1 || true; { [ -f \"$PD/soul-core.md\" ] || cat \"$PD/soul.md\" 2>/dev/null || echo '---NO-IDENTITY-YET--- No soul.md exists yet, so Alex has no voice or priorities loaded. This is the normal state of a brand new install. Tell the owner to run /setup, and do not pretend to have an identity you have not been given.'; } ; echo '---DISPATCH-CONTEXT---'; echo 'MCP tools are deferred. Before using Notion/Gmail/Calendar tools, load them via ToolSearch first.'; echo 'Notion date format: date:FieldName:start not flat string. Checkbox: __YES__/__NO__ not true/false.'; echo 'Gmail drafts: use gmail_create_draft MCP, not Chrome. Alex drafts and never sends.'; echo 'Calendar list_events: startTime/endTime in ISO 8601 (the older timeMin/timeMax names 404).'; echo 'Check vault/projects/error-log.md for past MCP fixes before retrying.'; NEW_FILES=$(find \"$PD/inbox\" -type f ! -name '.gitkeep' ! -name '_ingested.md' ! -name '.DS_Store' 2>/dev/null | wc -l | tr -d ' '); if [ \"$NEW_FILES\" != \"0\" ] && [ -n \"$NEW_FILES\" ]; then echo '---INBOX-NOTICE---'; echo \"You have $NEW_FILES file(s) in inbox/ that may need ingesting. If new, suggest running /ingest.\"; fi; node \"$PD/scripts/human-actions.js\" sessionline 2>/dev/null; true"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/scripts/capture-typed-input.js\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/autosave.sh\" --stop --json; fi",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

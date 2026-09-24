@@ -1,0 +1,7 @@
+{
+  "_generated_at": "2026-09-24T09:03:04Z",
+  "_purpose": "The template /update fetches from and checks CI on. Written by every template and seed build; a seed names the generic template, because owners update from the template and never from their seed.",
+  "_schema": "template-source@1",
+  "_writer": "scripts/build-online-template.mjs",
+  "template_remote": "https://github.com/Alex-kit-S/virtual-alex"
+}

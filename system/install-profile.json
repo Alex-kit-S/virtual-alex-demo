@@ -1,0 +1,26 @@
+{
+  "_what": "EXAMPLE of system/install-profile.json - this machine's own skill and lane choices. Copy this file to system/install-profile.json (same folder, drop the .example) and edit; the real file is gitignored on purpose, so your choices never touch tracked files and an update can never conflict with them.",
+  "_how": "wake[] un-parks skills the template ships parked; park[] parks skills the template ships awake. Names are the folder names under .agents/skills/. Apply with: node scripts/bootstrap.mjs --repair-links   (or let the next update do it). MANDATORY-bound skills (constitution Skill Bindings table) cannot be parked - the resolver refuses.",
+  "_lanes": "lanes are broad switches commands may consult (which parts of Alex this owner actually uses). locale is the language Alex answers in for generated deliverables.",
+  "_radar": "radar.feeds is the source list /radar (#15) sweeps. It lives HERE and not in the template on purpose: a feed list is a statement about what its owner thinks is worth knowing, and shipping one person's list to everyone gives every other install a radar that is confidently wrong every week while still looking like it works. The template ships none; /setup asks you for three or four. Rules: https only, free and keyless only (a feed that needs an account adds a credential to rotate and a failure that looks like a quiet week). kind is rss | atom | json | html and is inferred from the url when you leave it out. self_watch: true marks a feed that watches a tool YOU run rather than your field - those are the ones that warn you before the ground moves. keywords is an optional prefilter; leave it empty to score everything the feeds return. Read the live list with: node scripts/lib/radar-feeds.js",
+  "_radar_examples": [
+    { "name": "Hacker News: your topic", "url": "https://hn.algolia.com/api/v1/search_by_date?query=YOUR-TOPIC&tags=story", "kind": "json" },
+    { "name": "a tool you depend on", "url": "https://github.com/OWNER/REPO/releases.atom", "kind": "atom", "self_watch": true },
+    { "name": "a community you read", "url": "https://www.reddit.com/r/SUBREDDIT/.rss", "kind": "rss", "tags": ["community"] }
+  ],
+  "wake": [],
+  "park": [],
+  "radar": {
+    "feeds": [],
+    "keywords": []
+  },
+  "lanes": {
+    "website": false,
+    "marketing": false,
+    "finance": false,
+    "business-validation": false
+  },
+  "locale": "en",
+  "employer_domain": "",
+  "owner_work_address": ""
+}

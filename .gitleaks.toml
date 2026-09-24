@@ -1,0 +1,65 @@
+# VIRTUAL ALEX VARIANT of the Kit's .gitleaks.toml. scripts/build-online-template.mjs copies it into
+# the online template as the tree's .gitleaks.toml; the Kit's own file is not read there.
+# Extends the default gitleaks ruleset and allowlists KNOWN false positives that are NOT secrets.
+# Each was content-reviewed:
+#   - a1b2c3d4e5f6a7b8 : a fake token fixture used by the soul-core tests. (2026-07-18)
+#   - deadbeefdeadbeef : the "wrong token" fixture beside it. (2026-08-05)
+#
+# TWO DIFFERENCES from the laptop Kit's file (2026-09-24, fleet seat 7):
+#   1. No allowlist entry for a credential reference the online tree never contains. The laptop file
+#      carries one for a script that is a drop row here; shipping it would only publish the id.
+#   2. The canary rule below does not fire on soul.md and soul-core.md at the ROOT of the tree. On a
+#      laptop soul.md is gitignored, so a token in any tracked file is a leak. Online the repository
+#      IS the disk and both files are tracked by design (this tree's .gitignore says so), so every
+#      owner's repository was a gitleaks finding on its own identity file. The exemption is scoped to
+#      the canary rule and to those two exact paths: every other gitleaks rule still scans both files,
+#      and the token anywhere else, a subfolder named soul.md included, still fires.
+#
+# Never allowlist a whole path for every rule (pen-test P-05, 2026-08-05): a gitleaks-blind tracked
+# file is where a real secret ships silently. Values, or one rule's exact paths, never more.
+title = "Virtual Alex gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secret false positives (values, never whole paths)"
+regexes = [
+  '''a1b2c3d4e5f6a7b8''',
+  '''deadbeefdeadbeef''',
+]
+
+# --- The canary rule, added 2026-08-05 after a real self-inflicted leak ------------------------
+# The canary token proves a scheduled run received soul.md. It lives in soul.md, and online also
+# in the card compiled from it, soul-core.md. A token anywhere else in the tree is a paste, and the
+# default rules do not know a bare 16-hex string matters here. This rule matches the token only in
+# the shapes that carry it (the anchor line, or an emitted canary line), so ordinary hex in code is
+# unaffected.
+[[rules]]
+id = "alex-soul-canary-token"
+description = "soul.md canary token outside soul.md and its card (online both are tracked; anywhere else it is a paste)"
+# The capture group makes the SECRET just the hex value, not the whole "SOUL-OK <hex>" match, so the
+# fixture allowlist below matches against the value.
+regex = '''(?i)(?:SOUL-CANARY-TOKEN:|SOUL-OK)[ \t]+([0-9a-f]{12,})'''
+secretGroup = 1
+keywords = ["soul-canary-token", "soul-ok"]
+
+  # gitleaks 8.19+ syntax: an ARRAY of allowlists under the rule. The singular [rules.allowlist]
+  # form parses but did not suppress on 8.30.1.
+  [[rules.allowlists]]
+  description = "Test fixtures: deliberately fake tokens used to prove the gate fails closed."
+  regexTarget = "match"
+  regexes = [
+    '''a1b2c3d4e5f6a7b8''',
+    '''deadbeefdeadbeef''',
+  ]
+
+  [[rules.allowlists]]
+  # Paths are matched as gitleaks reports them, which is relative to the scan root when it runs from
+  # the repository root (`gitleaks git`, or `gitleaks dir .`). Scanning with an absolute path reports
+  # absolute paths, and then these two files show up as the by-design findings they are.
+  description = "Online the token's two homes are tracked by design: soul.md and its card, at the root only."
+  paths = [
+    '''^(\./)?soul\.md$''',
+    '''^(\./)?soul-core\.md$''',
+  ]

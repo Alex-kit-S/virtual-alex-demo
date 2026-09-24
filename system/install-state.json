@@ -1,0 +1,10 @@
+{
+  "_generated_at": "2026-09-24T15:08:49Z",
+  "_purpose": "Which template version this copy carries, and when it got there.",
+  "_schema": "install-state@1",
+  "_writer": "scripts/lib/install-state.js",
+  "previous_template_commit": "05ee2c4001e88a0af8ec1cd28aab1393a4b4dc90",
+  "stamped_by": "/update",
+  "template_commit": "26d1f000d3768b58bbbe69e9a309c50de14fea54",
+  "template_updated_at": "2026-09-24"
+}

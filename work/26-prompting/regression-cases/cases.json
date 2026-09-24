@@ -1,0 +1,134 @@
+{
+  "doc": "Prompt regression cases. Each case pins the load-bearing SHAPE of a production prompt or runbook so an edit cannot silently drop a required instruction. scripts/prompt-regression-check.js replays them after any prompt edit: string-shape assertions only, zero Claude calls, no model judging anything. A case is { id, target (repo-relative file), example_input (illustrative), must_contain (every regex must match), must_not_contain (none may match), note }. RE-PINNED 2026-08-17 to the commands this system actually ships. That re-pinning is the whole point of the mechanism: a suite left pointing at files that no longer exist reports 'target missing' forever, which reads exactly like a suite that is passing.",
+  "cases": [
+    {
+      "id": "morning-brief-index",
+      "target": ".claude/commands/morning-brief.md",
+      "example_input": "Run /morning-brief on a calm Tuesday: two mails need a reply, one client has not answered in nine days, the backup ran clean.",
+      "must_contain": [
+        "waiting-on-them\\.js briefline",
+        "human-actions\\.js",
+        "run-status\\.json",
+        "Seven lines maximum"
+      ],
+      "must_not_contain": [],
+      "note": "The brief must stay an INDEX with a hard line cap, and must keep all four reads it is the surface for: what you are waiting on, what is waiting on you, the health board, and the notes folder. Dropping any one of them is a silent regression, and it is silent precisely because the brief still looks fine without it."
+    },
+    {
+      "id": "email-triage-safety-and-rules",
+      "target": ".claude/commands/email-triage.md",
+      "example_input": "Three promotional mails, one client question and one receipt land overnight; scheduled run.",
+      "must_contain": [
+        "rules\\.md",
+        "waiting-on-them\\.js sweep",
+        "UNTRUSTED",
+        "sender-rules\\.json"
+      ],
+      "must_not_contain": [
+        "auto-send the",
+        "sends the reply"
+      ],
+      "note": "Must keep the plain-English rules read, the awaiting-reply sweep, the inbound-content-is-DATA wall, and the deterministic sender gate. must_not_contain is deliberately phrased as ACTIONS rather than the bare word 'auto-send': the file legitimately contains the sentence 'never auto-send', and a forbidden-substring rule that fires on the safety rule itself would push somebody to delete the safety rule to make the check pass."
+    },
+    {
+      "id": "research-team-claims-table",
+      "target": ".claude/commands/research-team.md",
+      "example_input": "/research-team \"is n8n or Make cheaper at 50k executions/mo\"",
+      "must_contain": [
+        "Claims table",
+        "Source \\(URL\\)",
+        "Confidence|confidence"
+      ],
+      "must_not_contain": [],
+      "note": "Every deliverable must end with the citation-anchored claims table (the output contract)."
+    },
+    {
+      "id": "prompting-assembly-contract",
+      "target": ".claude/commands/prompting.md",
+      "example_input": "/prompting I want a report that pulls my n8n execution failures from the last week and tells me which workflow is the worst offender.",
+      "must_contain": [
+        "overlap check",
+        "Identify the skills that are needed for the task and use them",
+        "scope asked",
+        "subagent to verify",
+        "no filler sections",
+        "Suggested effort",
+        "Close-Out Gate",
+        "soul core",
+        "model-playbook.md",
+        "ASK, every time",
+        "resolved model",
+        "never applied unconditionally",
+        "Built for:",
+        "EXECUTOR",
+        "ARTIFACT",
+        "already covered",
+        "400 to 900",
+        "no playbook section",
+        "prompt-regression-check\\.js --delivered"
+      ],
+      "must_not_contain": [
+        "double-check"
+      ],
+      "note": "The assembly contract for every generated prompt. Original shapes: the step-0 overlap check, the verbatim skills sentence, the real Close-Out Gate reference. Opus 5 shapes added 2026-07-28 from platform.claude.com/docs .../prompting-claude-opus-5: the INPUT-1 scope line (Opus 5 expands scope, and this constitution amplifies it), the delegation bound (Opus 5 delegates readily), the OUTPUT-1 length calibration (Opus 5 writes longer files to disk), and the Suggested-effort line outside the block (effort is the cost/latency lever and cannot be set from inside a pasted prompt). The negative pins verification hygiene: this file may PROHIBIT blanket verification but must never INSTRUCT it, and 'double-check' is the tell - if it reappears, someone re-introduced the over-verification instruction the guide says to remove. Gate-40 shape added 2026-08-16 (S1 P5): INPUT-1 re-reads the loaded soul core with full soul.md as the register fallback; the case pins the phrase so a rewrite cannot silently restore the always-full-file demand the owner retired. MODEL-LAYER shapes added 2026-08-26, ported from the upstream Alex system and adapted (no n8n lane here, only the local_wrappers pins V13 enforces). The bug pinned against: the 2026-07-28 Opus 5 alignment wrote four Opus 5 shapes into EVERY generated prompt, and three of them (delegation, verification, scope) INVERT on Fable 5, so a Fable 5 prompt carried instructions working against the model while still reading perfectly. \"resolved model\" and \"never applied unconditionally\" pin CONDITIONALITY, which is the actual fix; \"Built for:\" pins the model tag on the delivered line, the only place a mismatch is visible in a saved prompt. The double-check negative is unchanged and the Fable 5 verifier carve-out is worded so that string never enters this file."
+    },
+    {
+      "id": "prompting-spec-normative",
+      "target": "work/26-prompting/CLAUDE.md",
+      "example_input": "An edit to the prompting spec that updates the worked Example but not the normative section above it.",
+      "note": "Pins the SPEC, which was deliberately left unpinned on the reasoning that the command file is what loads on /prompting, so that is where the teeth belong. That reasoning has a hole and it produced a real defect: when the soul-reading rule changed, the command file and the worked Example were both updated and the NORMATIVE section was missed, so a run copying from the section it is supposed to copy from reproduced the retired always-full-file demand. The command-file pin could never see it. Pin the surface assembly copies FROM, not only the surface most recently fixed. must_not_contain is the retired wording itself, so no rewrite can quietly restore it. The four section pins are anchored to their `\\n## ` heading form on purpose: pinned as bare phrases they matched the cross-references in the hard-cases table and the gap-check list instead, so deleting an entire section still passed. A pin that matches something other than the thing it is guarding is the exact failure this suite exists to prevent, and it was caught here by negative-testing rather than by reading.",
+      "must_contain": [
+        "Re-read the loaded soul core",
+        "EXECUTOR",
+        "ARTIFACT",
+        "\\n## Assembly shape by target harness",
+        "\\n## The no-prompt outcome",
+        "\\n## The repair flow",
+        "\\n## Overlap resolution",
+        "partially-answered round"
+      ],
+      "must_not_contain": [
+        "Re-read `soul\\.md` \\(repo root; mandatory after any compaction\\)"
+      ]
+    },
+    {
+      "id": "prompting-model-playbook",
+      "target": "work/26-prompting/model-playbook.md",
+      "example_input": "A playbook refresh that renumbers or deletes a section the spec cites by number.",
+      "note": "Pins the playbook itself. The spec cites it by section number in roughly fifteen places, and before this case nothing asserted those sections still existed: a playbook edit deleting a cited section was invisible to every checker here. 4.12 and 5.5 are the two carrying the verification inversion between Fable 5 and Opus 5, which is the single most consequential model-layer rule; 4.7 and 5.7 carry the delegation inversion. The effort levels are pinned because the delivered line's format depends on the set.",
+      "must_contain": [
+        "4\\.12",
+        "5\\.5",
+        "5\\.7",
+        "4\\.7",
+        "max",
+        "xhigh"
+      ]
+    },
+    {
+      "id": "status-is-the-health-board",
+      "target": ".claude/commands/status.md",
+      "example_input": "Owner asks 'is Alex ok?' the morning after a failed backup.",
+      "must_contain": [
+        "run-status\\.json",
+        "last-sweep\\.md",
+        "human-actions\\.js",
+        "waiting-on-them\\.js"
+      ],
+      "must_not_contain": [],
+      "note": "With the brief on demand rather than scheduled, /status is the only surface guaranteed to be read. It must keep all four of the things the brief used to be the sole home for. If a future edit trims one of these reads out of /status, that subsystem reports to nobody."
+    },
+    {
+      "id": "teach-alex-confirms-identity-edits",
+      "target": ".claude/commands/teach-alex.md",
+      "example_input": "Owner says: you filed Nadia as a client, she is a colleague, fix it.",
+      "must_contain": [
+        "corrections-log",
+        "CONFIRM",
+        "soul\\.md"
+      ],
+      "must_not_contain": [],
+      "note": "Every correction must be logged, and identity files must never be edited without explicit confirmation. An unlogged correction is one that will have to be made again; an unconfirmed identity edit is the system rewriting who its owner is on a guess."
+    }
+  ]
+}

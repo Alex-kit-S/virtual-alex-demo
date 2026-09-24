@@ -1,0 +1,407 @@
+{
+  "meta": {
+    "generated": "2026-07-06",
+    "repo_visibility": "private",
+    "purpose": "THE project registry, at system/manifest.json since 2026-07-08 (moved from work/18-recovery-layer, refactor amendment A2) (audit step 3, 2026-07-06): desired-state source of truth for BOTH the Recovery checker (check.ps1) AND the generated surfaces (CLAUDE.md routing table + docs/projects/README.md table + docs/GETTING-STARTED.md + docs/README.md quick start, written by scripts/generate-alex.js, the unified generator since 2026-07-08). Curated by hand: when a project is added, retired, renamed, or changes state/trigger, edit THIS file first, then run the generator. /new writes its entry here before scaffolding. The per-project CLAUDE.md baseline hashes are stored by `check.ps1 -Init` in state/baseline.json (NOT here); the claude_md_sha fields below are reserved/unused. The `hq_project` field is THE authoritative project->dashboard metric-slug map (2026-07-07): a dashboard's project builder reads it to render its Automation Health board FROM this registry, so every registered project shows (not just the ones that push telemetry). null = the project pushes no live metric (its ticket shows an honest idle state).",
+    "states_doc": "LIVE = scheduled/event-driven + producing (needs wrapper/error-handler + HQ push). ON-DEMAND = runs when invoked. EVENT = triggered by a detected event, no cron by design. DORMANT = built, waiting on an external dependency (name it + revisit date; two unchanged revisits force activate-or-retire). PARKED = deliberately stopped (resume context + revisit date; same two-strike rule). RETIRED = superseded, tombstoned, strikethrough row. A project may carry LIVE or EVENT for at most 14 days with first_fire null (aging measured from its status.md frontmatter created date); past that the generator V9 warns and check.ps1 C13 goes amber until it fires (a documented drill counts, first_fire_kind=drill) or is re-stated with a reason.",
+    "cadence_doc": "Upgrade P4 (2026-07-12, design 1.3/MR2-3): `cadence` replaced the old per-day integer field. {expected_hours: N|null, label, note?} - expected_hours is the staleness window HQ/checks age against (null = never stale by age: on-demand/event/dormant/parked/retired); label drives the per-class render rules (design 4.2); note is the human phrase shown on monthly/odd cadences. Multi-job projects are keyed to the tightest job. `first_fire`/`first_fire_kind` (design 1.4/MR2-5): the date a project FIRST produced for real (null = never fired; kind live|drill - a documented drill counts as proof, marked honestly). RULING (2026-07-25, upgrade #18 P4 reconciling the 07-25 FR-02 downgrade): `expected_hours` is AUTHORITATIVE ONLY for HQ tile age-render (a dashboard's staleness check ages the metric-push ts against it) - it is NOT the silence monitor. The authoritative outage detector is a liveness check on the workflow server, which derives each workflow's window from its own scheduleTrigger, never this field. So a wrong expected_hours only mis-colors a tile, it can never miss a real outage. Field is KEPT (not deleted): it drives render and reads honestly; it is deliberately not load-bearing for detection, so it is never a cry-wolf source. `scope` (added 2026-07-25, stress-test F-06 follow-on): 'n8n-engine' means this cadence describes the project's REMOTE n8n workflow, not its local Windows job, so recovery C16 (a doc-vs-doc label compare against scheduler/schedule.md) SKIPS it and validator V6 leg (c) owns it instead by asserting `n8n_cron` against the live scheduleTrigger (doc-vs-reality, strictly stronger). Omitted/any other value = the cadence describes the local jobs and C16 checks it normally. A remotely-hosted project is why this exists: its engine can run twice a week on a server while a local job watches it daily, so the two cadences are both correct and comparing them reports permanent false drift.",
+    "model_routing": {
+      "doc": "THE machine-authoritative model-routing contract. A validator NEVER derives its expectation from prose: desired state lives here in structured data and the check reads THIS. In this system the only lane is LOCAL, so only local_wrappers is enforced (validate-alex V13). To change a pin, edit here, then run node scripts/generate-alex.js.",
+      "default": "claude-sonnet-4-6",
+      "local_wrappers": {
+        "doc": "LOCAL model-pin contract for the scheduled claude -p wrappers under scripts/. Enforced by validate-alex V13. Root fix for the \"a wrapper forgets --model and inherits the expensive global default\" cost-leak class, which matters more on Claude Pro than on any bigger plan. pins = every wrapper that makes a real claude -p call -> the exact --model it MUST pass. deterministic_no_pin = wrappers that make NO claude call (zero-token). V13 is COMPLETE by construction: every scripts/run-*.ps1 (+ auth-check.ps1) MUST appear in one list or the other, so a new or copied wrapper cannot silently inherit the default.",
+        "pins": {
+          "run-email-triage.ps1": "claude-sonnet-4-6",
+          "run-morning-brief.ps1": "claude-sonnet-4-6",
+          "run-self-review.ps1": "claude-sonnet-4-6",
+          "run-lint.ps1": "claude-sonnet-4-6",
+          "auth-check.ps1": "claude-sonnet-4-6",
+          "run-radar.ps1": "claude-sonnet-4-6"
+        },
+        "deterministic_no_pin": [
+          "run-vault-index.ps1"
+        ]
+      }
+    },
+    "paths": {
+      "doc": "Machine-checkable filesystem pointers that must survive file moves without silently rotting (added 2026-07-25, stress-test fixes F1+F2). SSOT so a validator/check reads the path from here, never a hardcoded literal. %USERPROFILE% is expanded at read time so a restore to a different Windows user does not perma-fail.",
+      "backup_destinations": [
+        {
+          "name": "google-drive",
+          "kind": "rclone",
+          "target": "alex-drive:alex-vault-backups",
+          "correlated_with": null,
+          "note": "the single backup destination. rclone remote name alex-drive, configured once by Install-Alex.cmd. The tar is gpg AES256 encrypted before it leaves the machine, so Google holds ciphertext only."
+        }
+      ],
+      "backup_min_destinations": 1,
+      "backup_min_destinations_note": "C20 asserts at least this many destinations verified fresh inside its window. One destination is the honest number here; raising it is a deliberate manifest edit plus a second real destination, never a wish."
+    },
+    "utility_commands": [
+      "setup",
+      "ingest",
+      "status",
+      "lint",
+      "new",
+      "cron-setup",
+      "brand",
+      "support-bundle"
+    ],
+    "known_work_folders": [],
+    "trifecta_doc": "Trifecta classification (three-plan validation P3, 2026-07-17): the agent-security Rule-of-Two made declarative. Each project carries {private_data, untrusted_content, external_comm} booleans (the raw capability/exposure, classified honestly) + a `gate` (the mitigation). VOCAB: draft-only (Alex drafts, a human sends) | human-posts (Alex stages, a human posts) | queue-only (Alex queues an action for human approval) | read-only (never autonomously emits/writes externally) | null (no meaningful external exposure). RULE (validator V12, pure file checks): any project with ALL THREE legs true MUST carry a non-null gate from the vocab, AND that gate string MUST appear on a `## Trifecta` line in the project's work/NN/CLAUDE.md. v1 DROPS the read-only-vs-write integrations assertion (no integrations data in the manifest; deferred, see vault/research/trifecta-map.md). v1 is DECLARATIVE, not runtime-enforced. Full classification + reasoning + system-level channels: vault/research/trifecta-map.md.",
+    "unnumbered": [],
+    "vault": {
+      "status_byte_budget": 25600,
+      "note": "S1 Compiled Surfaces P2 (2026-08-16): Tier-1 status.md files are SUMMARIES by contract. scripts/status-rotate.js moves whole dated H2 blocks (oldest first, heading-block-atomic so BM25 chunks keep their inline supersessions) of any over-budget status.md to vault/projects/{name}/history/status-YYYY.md, linked both ways, journaled to system/status-rotate-journal.jsonl before each move. C24 ambers on any status.md over this budget (live byte count, so a dead rotator cannot hide). Nothing is deleted anywhere."
+    },
+    "constitution": {
+      "byte_budget": 76000,
+      "note": "S1 Compiled Surfaces P3 (2026-08-16, the owner-approved diff): CLAUDE.md landed at 63,227 B after the rulebook diet; budget = landing +20% so V16 catches REGROWTH, never the split. New standing content = operative sentence in CLAUDE.md + history in docs/constitution-annex/. Raise only as a deliberate manifest edit."
+    },
+    "routines_doc": "Virtual Alex scheduling contract (plan Phase 4, 2026-09-23). routines[] is the online scheduler: one row per Routine on the owner's claude.ai account. name = the job name every run-log row carries (--job); the form's own name is alex-<name>. prompt_file = the committed order the form's one-line prompt points at (scheduler/routines/<name>.md; validator V19 binds files and rows both ways). preset = the form preset (daily | weekdays | weekly) and time_local = the time the owner types, in their local zone, with the weekday in front for weekly. cadence_hours = the freshness window the weekly sweep (work/18-recovery-layer/check.mjs) ages the newest row against, plus six hours of grace: 24 daily, 168 weekly, and 72 for the weekday brief because the Sunday sweep would otherwise amber the Friday row every week; the Missed-N opener in each prompt counts by the PRESET, not by this number. environment = the cloud environment the form selects (Routine sets ALEX_ROUTINE=1, the guard's routine mode; Armed also sets ALEX_UNTRUSTED_LANE, the full wall). connectors = the list to KEEP on the form (every other connector is removed; [] = none). repositories = owner (one repository, hooks load) or owner+mirror (the snapshot only; two repositories, no hooks, the prompt does its own git). model = the id the form's selector must show, the registry default; the sweep ambers a row that reports another. first_run_check = the one read-back the owner does after Run now. Rendered by scripts/lib/gen-routines.js into docs/ROUTINES-FORMS.md and the ROUTINES region of variants/online/scheduler/schedule.md."
+  },
+  "projects": [
+    {
+      "num": 2,
+      "name": "morning-brief",
+      "title": "Morning Brief",
+      "state": "ON-DEMAND",
+      "trigger": "on-demand",
+      "one_liner": "The on-demand brief: overnight mail from #07, today's calendar, what you are waiting on, what is waiting on you, and any notes you left yourself. Type /morning-brief when you want it.",
+      "docs": "02-morning-brief.md",
+      "schedule_jobs": [],
+      "revisit": null,
+      "work_dir": "work/02-morning-brief",
+      "commands": [
+        "morning-brief"
+      ],
+      "status_md": "vault/projects/morning-brief/status.md",
+      "cadence": {
+        "expected_hours": null,
+        "label": "on-demand"
+      },
+      "trifecta": {
+        "private_data": true,
+        "untrusted_content": true,
+        "external_comm": false,
+        "gate": "read-only"
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    },
+    {
+      "num": 4,
+      "name": "research-team",
+      "title": "Research Team",
+      "state": "ON-DEMAND",
+      "trigger": "on-demand",
+      "one_liner": "Adaptive multi-agent research squads for EXTERNAL evidence, plus an evidence-anchored Adversarial Verification Mode (verify: a claim, refuters grounded in external facts, converge to CONFIRMED/REFUTED/UNRESOLVED, never consensus-laundered). Capped at 3 parallel lanes.",
+      "docs": "04-research-team.md",
+      "schedule_jobs": [],
+      "revisit": null,
+      "work_dir": "work/04-research-team",
+      "commands": [
+        "research-team"
+      ],
+      "status_md": "vault/projects/research-team/status.md",
+      "cadence": {
+        "expected_hours": null,
+        "label": "on-demand"
+      },
+      "trifecta": {
+        "private_data": false,
+        "untrusted_content": true,
+        "external_comm": false,
+        "gate": "read-only"
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    },
+    {
+      "num": 6,
+      "name": "meeting-intel",
+      "title": "Meeting Intel",
+      "state": "ON-DEMAND",
+      "trigger": "on-demand",
+      "one_liner": "Drop any file in (text, PDF, VTT, audio, image) and get a transcript, the decisions, the action items and a structured note. Also builds a one-page dossier before a meeting.",
+      "docs": "06-meeting-intel.md",
+      "schedule_jobs": [],
+      "revisit": null,
+      "work_dir": "work/06-meeting-intel",
+      "commands": [
+        "meeting-intel"
+      ],
+      "status_md": "vault/projects/meeting-intel/status.md",
+      "cadence": {
+        "expected_hours": null,
+        "label": "on-demand"
+      },
+      "trifecta": {
+        "private_data": true,
+        "untrusted_content": true,
+        "external_comm": false,
+        "gate": "read-only"
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    },
+    {
+      "num": 7,
+      "name": "email-triage",
+      "title": "Email Triage",
+      "state": "LIVE",
+      "trigger": "logon + 10 min",
+      "one_liner": "Inbox triage once each morning plus voice-matched reply drafts behind the Draft Gate; learns from the edits you make. The only scheduled reasoning job in the system.",
+      "docs": "07-email-triage.md",
+      "schedule_jobs": [
+        "Alex-email-triage"
+      ],
+      "revisit": null,
+      "work_dir": "work/07-email-triage",
+      "commands": [
+        "email-triage"
+      ],
+      "status_md": "vault/projects/email-triage/status.md",
+      "cadence": {
+        "expected_hours": 30,
+        "label": "daily",
+        "note": "fires on logon + 10 min, so a closed laptop delays it rather than skipping it"
+      },
+      "trifecta": {
+        "private_data": true,
+        "untrusted_content": true,
+        "external_comm": true,
+        "gate": "draft-only"
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    },
+    {
+      "num": 15,
+      "name": "radar",
+      "title": "Radar",
+      "state": "LIVE",
+      "trigger": "weekly Monday 07:30",
+      "one_liner": "The staying-current engine: once a week it sweeps the feeds you chose, scores what it finds against your own taste and your own friction list, and hands you the one or two things worth acting on. It proposes; you decide. Nothing is ever installed, built or bought on its own say-so.",
+      "docs": "15-radar.md",
+      "schedule_jobs": [
+        "Alex-radar"
+      ],
+      "revisit": null,
+      "work_dir": "work/15-radar",
+      "commands": [
+        "radar"
+      ],
+      "status_md": "vault/projects/radar/status.md",
+      "cadence": {
+        "expected_hours": 192,
+        "label": "weekly",
+        "note": "weekly on the clock, so a machine that is off all Monday misses the week - Run Check 7 reports the gap rather than absorbing it"
+      },
+      "trifecta": {
+        "private_data": true,
+        "untrusted_content": true,
+        "external_comm": false,
+        "gate": "read-only"
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    },
+    {
+      "num": 18,
+      "name": "recovery-layer",
+      "title": "Recovery Layer",
+      "state": "LIVE",
+      "trigger": "logon (staggered 20/25/30 min)",
+      "one_liner": "Backups (git plus an encrypted vault tar to your own Drive), the zero-token drift checker, the status rotation caps, and the Recall Spine fact ledger. This is the layer that notices when something quietly stopped working.",
+      "docs": "18-recovery-layer.md",
+      "schedule_jobs": [
+        "Alex-recovery-check",
+        "Alex-git-backup",
+        "Alex-vault-backup",
+        "Alex-vault-index"
+      ],
+      "revisit": null,
+      "work_dir": "work/18-recovery-layer",
+      "commands": [],
+      "status_md": "vault/projects/recovery/status.md",
+      "cadence": {
+        "expected_hours": 30,
+        "label": "daily",
+        "note": "backups + index on logon; the drift sweep rides the same trigger"
+      },
+      "trifecta": {
+        "private_data": true,
+        "untrusted_content": false,
+        "external_comm": true,
+        "gate": null
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    },
+    {
+      "num": 22,
+      "name": "teach-alex",
+      "title": "Teach-Alex",
+      "state": "EVENT",
+      "trigger": "inbox note + on-demand",
+      "one_liner": "Ten-second corrections: tell Alex it got something wrong, and the correction is classified, filed, confirmed for identity files, and logged so /self-review can spot the pattern.",
+      "docs": "22-teach-alex.md",
+      "schedule_jobs": [],
+      "revisit": null,
+      "work_dir": "work/22-teach-alex",
+      "commands": [
+        "teach-alex"
+      ],
+      "status_md": "vault/projects/teach-alex/status.md",
+      "cadence": {
+        "expected_hours": null,
+        "label": "event"
+      },
+      "trifecta": {
+        "private_data": true,
+        "untrusted_content": false,
+        "external_comm": false,
+        "gate": null
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    },
+    {
+      "num": 23,
+      "name": "self-review",
+      "title": "Self-Review",
+      "state": "LIVE",
+      "trigger": "monthly on the 1st",
+      "one_liner": "Alex reviews Alex once a month: clusters the corrections you made, the errors that happened and the runs that closed incomplete, then proposes changes behind your approval. Also /deep-audit, the whole-repo adversarial sweep, which is DISABLED by default because on Claude Pro it can spend most of a day.",
+      "docs": "23-self-review.md",
+      "schedule_jobs": [
+        "Alex-self-review"
+      ],
+      "revisit": null,
+      "work_dir": "work/23-self-review",
+      "commands": [
+        "self-review",
+        "deep-audit"
+      ],
+      "status_md": "vault/projects/self-review/status.md",
+      "cadence": {
+        "expected_hours": 744,
+        "label": "monthly",
+        "note": "monthly, not weekly: it drains the lesson queue without spending a Pro allowance every week"
+      },
+      "trifecta": {
+        "private_data": true,
+        "untrusted_content": false,
+        "external_comm": false,
+        "gate": null
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    },
+    {
+      "num": 26,
+      "name": "prompting",
+      "title": "Prompting",
+      "state": "ON-DEMAND",
+      "trigger": "on-demand",
+      "one_liner": "The translator function: say what you want in plain English, get back a lean CONTEXT/INPUT/OUTPUT prompt for Claude Code, with an overlap check against what this system already does.",
+      "docs": "26-prompting.md",
+      "schedule_jobs": [],
+      "revisit": null,
+      "work_dir": "work/26-prompting",
+      "commands": [
+        "prompting"
+      ],
+      "status_md": "vault/projects/prompting/status.md",
+      "cadence": {
+        "expected_hours": null,
+        "label": "on-demand"
+      },
+      "trifecta": {
+        "private_data": true,
+        "untrusted_content": false,
+        "external_comm": false,
+        "gate": null
+      },
+      "first_fire": null,
+      "first_fire_kind": null,
+      "claude_md_sha": null
+    }
+  ],
+  "routines": [
+    {
+      "cadence_hours": 168,
+      "connectors": [],
+      "environment": "Routine",
+      "first_run_check": "Tap Run now, then open your backup repository on github.com: a branch named claude/backup-<today> exists, and the newest row of system/run-log.jsonl on your Alex repository is job snapshot, status COMPLETE.",
+      "model": "claude-sonnet-4-6",
+      "name": "snapshot",
+      "preset": "weekly",
+      "prompt_file": "scheduler/routines/snapshot.md",
+      "repositories": "owner+mirror",
+      "time_local": "Sunday 04:15"
+    },
+    {
+      "cadence_hours": 168,
+      "connectors": [],
+      "environment": "Routine",
+      "first_run_check": "Tap Run now, then open vault/projects/recovery/last-sweep.md on github.com: it is dated today, and system/run-log.jsonl gained rows for sweep, self-review, skills and housekeeping.",
+      "model": "claude-sonnet-4-6",
+      "name": "housekeeping",
+      "preset": "weekly",
+      "prompt_file": "scheduler/routines/housekeeping.md",
+      "repositories": "owner",
+      "time_local": "Sunday 04:45"
+    },
+    {
+      "cadence_hours": 24,
+      "connectors": [
+        "Gmail"
+      ],
+      "environment": "Armed",
+      "first_run_check": "Tap Run now, then open Gmail: every thread the run marked Act Now carries an unsent draft from Alex and nothing was sent; the newest run-log row is job triage with canary ok.",
+      "model": "claude-sonnet-4-6",
+      "name": "triage",
+      "preset": "daily",
+      "prompt_file": "scheduler/routines/triage.md",
+      "repositories": "owner",
+      "time_local": "05:00"
+    },
+    {
+      "cadence_hours": 72,
+      "connectors": [
+        "Gmail",
+        "Calendar"
+      ],
+      "environment": "Armed",
+      "first_run_check": "Tap Run now, then read the run in the app: the brief opens with the health lines (every Routine ran, or which did not) before the inbox, and the newest run-log row is job brief with canary ok.",
+      "model": "claude-sonnet-4-6",
+      "name": "brief",
+      "preset": "weekdays",
+      "prompt_file": "scheduler/routines/brief.md",
+      "repositories": "owner",
+      "time_local": "06:15"
+    },
+    {
+      "cadence_hours": 168,
+      "connectors": [],
+      "environment": "Routine",
+      "first_run_check": "Tap Run now, then open vault/projects/radar/status.md on github.com: last_run is today and the run named every feed it read or that refused it; the newest run-log row is job radar.",
+      "model": "claude-sonnet-4-6",
+      "name": "radar",
+      "preset": "weekly",
+      "prompt_file": "scheduler/routines/radar.md",
+      "repositories": "owner",
+      "time_local": "Sunday 23:30"
+    }
+  ]
+}

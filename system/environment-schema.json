@@ -1,0 +1,112 @@
+{
+  "_readme": "Machine-rebuild environment schema (2026-08-05, enterprise-assessment idea 6, vault/research/enterprise-assessment-ideas.md). Declares every OUTSIDE-REPO dependency Alex needs on a machine, so scripts/bootstrap.ps1 can prove a fresh restore complete instead of archaeology. TRACKED + public, so it carries NO secret paths: secret-file expectations are read at runtime from system/credentials-ledger.json (gitignored, existence-checked only, values never read). Probes are COMMAND NAMES (resolved via Get-Command), never arbitrary strings, so this file cannot inject shell. Rules that would drift if restated (scheduler jobs, skill junctions) point at their source of truth instead of copying it. | Trimmed for this system 2026-08-17: gh removed (nothing here shells to it), ImageMagick and diagrammer removed (not installed), rclone and Whisper and ffmpeg promoted to REQUIRED because a real feature depends on each, and the ssh alias list emptied because there is no server. The point of this file is that a correct install prints zero MISS: every line that cannot be satisfied teaches its owner to ignore the report. | 2026-09-22: python-docx removed. Nothing in the Kit imports it (the identity docs it edited exist only in the donor system), so it was a permanent false MISS on every install, and a report that always shows a MISS is a report nobody reads.",
+  "tools": [
+    {
+      "id": "git",
+      "required": true,
+      "version_args": "--version",
+      "restore": "winget install Git.Git. Brings gpg and Git Credential Manager with it, which is how GitHub sign-in works here: a browser window, no token to copy."
+    },
+    {
+      "id": "node",
+      "required": true,
+      "version_args": "--version",
+      "min_major": 22,
+      "restore": "winget install OpenJS.NodeJS.LTS. Must be >= 22 AND must actually load node:sqlite: the installer asserts node -e \"require('node:sqlite')\" succeeds, because on some 22.x builds it sits behind a flag and the memory layer dies at require time."
+    },
+    {
+      "id": "python",
+      "required": true,
+      "version_args": "--version",
+      "restore": "winget install Python.Python.3.12 (vault search index, audio transcription)."
+    },
+    {
+      "id": "claude",
+      "required": true,
+      "version_args": "--version",
+      "restore": "Windows: npm install -g @anthropic-ai/claude-code@2.1.233 · macOS: curl -fsSL https://claude.ai/install.sh | bash -s 2.1.233 - the SAME pin Install-Alex.{cmd,command} use (one source of truth; an unpinned restore and a pinned install produced two different harnesses). Then sign in interactively. UNVERIFIED on a clean machine at build time: the VS Code extension alone is not proof the CLI is on PATH, and every scheduled job is a claude call. Install-Alex.cmd installs it explicitly and refuses to register any scheduled job unless claude --version answers."
+    },
+    {
+      "id": "gitleaks",
+      "required": true,
+      "version_args": "version",
+      "restore": "winget install Gitleaks.Gitleaks - the pre-commit secret scan FAIL-OPENS without it, so a machine without gitleaks is a machine where that guard silently does nothing."
+    },
+    {
+      "id": "gpg",
+      "required": true,
+      "version_args": "--version",
+      "fallback_paths": [
+        "C:\\Program Files\\Git\\usr\\bin\\gpg.exe",
+        "C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe"
+      ],
+      "restore": "Git-bundled gpg.exe is what production uses (vault-backup.ps1 resolves these same fallback paths, in this order, before PATH); winget install GnuPG.GnuPG only if Git's copy is gone"
+    },
+    {
+      "id": "rclone",
+      "required": true,
+      "version_args": "version",
+      "restore": "winget install Rclone.Rclone, then run: rclone config -> new remote named alex-drive -> Google Drive -> sign in. This is the ONLY off-machine backup destination, so a missing rclone means no backup at all. vault-backup.ps1 hard-fails rather than skipping silently.",
+      "note": "REQUIRED, and vault-backup.ps1 hard-throws without it rather than skipping the leg. This is the only off-machine backup destination, so a silent skip would mean no backup at all under a green log."
+    },
+    {
+      "id": "whisper",
+      "required": false,
+      "version_args": null,
+      "restore": "pip install openai-whisper. Install-Alex.cmd attempts it as a named step, but it pulls a multi-gigabyte machine-learning library and that download fails often on a fresh machine, so it is OPTIONAL by design rather than by accident: a required tool the installer tolerates failing means a correct install still prints MISS, and a report that always shows a MISS is a report nobody reads.",
+      "feature_if_missing": "Audio transcription in /meeting-intel. Every other input format still works; an audio file is reported as skipped with a plain sentence, never a silent failure."
+    },
+    {
+      "id": "ffmpeg",
+      "required": false,
+      "version_args": "-version",
+      "restore": "winget install Gyan.FFmpeg (Whisper needs it to read audio files)",
+      "feature_if_missing": "Audio transcription in /meeting-intel (Whisper needs it to read audio files). Same reasoning as whisper."
+    },
+    {
+      "id": "obsidian",
+      "required": false,
+      "version_args": null,
+      "restore": "winget install Obsidian.Obsidian",
+      "feature_if_missing": "Reading the vault as a linked notebook. Everything still works; the vault is plain markdown and any editor opens it. Listed here because the installer installs it, and a tool that is installed but never verified is a tool nobody notices the absence of."
+    }
+  ],
+  "npm_globals": [
+    {
+      "id": "@n8n/cli",
+      "required": false,
+      "note": "n8n-cli skill backend; env N8N_URL + N8N_API_KEY at runtime. NOT the unscoped npm package n8n-cli."
+    }
+  ],
+  "python_packages": [],
+  "junction_rule": {
+    "target_dir": ".agents/skills",
+    "link_dir": ".claude/skills",
+    "note": "Rebuild with `node scripts/bootstrap.mjs --repair-links` on every platform - junctions on Windows (no admin), symlinks on macOS. Never hand-build with `ln -s` in Git Bash on Windows: it silently COPIES instead of linking."
+  },
+  "scheduler_rule": {
+    "source": "system/manifest.json projects[].schedule_jobs",
+    "note": "Task Scheduler jobs are DECLARED in the manifest and created by /cron-setup. bootstrap only reports missing Alex-* tasks; it never creates them (recreation is /cron-setup's job so the wrapper flags stay canonical)."
+  },
+  "secret_files_rule": {
+    "source": "system/credentials-ledger.json",
+    "note": "The gitignored ledger names where every credential lives. bootstrap existence-checks the FILE-type entries (local_path field, or a repo-relative path in `where`); values are never read or printed. A missing ledger on a fresh machine means the encrypted vault backup has not been restored yet - restore it first (vault/projects/recovery/vault-backup-plan.md)."
+  },
+  "ssh": [],
+  "claude_settings": {
+    "file": "~/.claude/settings.json",
+    "expect_keys": [
+      "model",
+      "fallbackModel"
+    ],
+    "expect_env": {
+      "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"
+    },
+    "note": "After a restore, re-apply these by hand. DISABLE_AUTOUPDATER is deliberately NOT set here: pinning the CLI on a family machine means it never gets security fixes, and an unpinned CLI that breaks a hook is the more recoverable of the two failures."
+  },
+  "git_expectations": {
+    "remote": "origin",
+    "core_longpaths": true,
+    "note": "PUBLIC repo your GitHub repo; nightly 21:30 push needs the PAT in Windows Credential Manager (ledger id github-backup-pat)."
+  }
+}

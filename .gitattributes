@@ -1,0 +1,64 @@
+# Line-ending law for this repo. Added 2026-08-17 as the real fix for N-03.
+#
+# WHY THIS FILE EXISTS. skills-lock.json stores computedHash = sha256 of the INSTALLED
+# .agents/skills/<name>/SKILL.md, byte for byte, and recovery check S7 recomputes it to detect
+# tampering. Git for Windows defaults to core.autocrlf=true, so a fresh `git clone` rewrote every
+# LF into CRLF on checkout and changed the bytes of files nobody had edited. Measured on the first
+# kit checkout: 23 of 101 hashes mismatched, and diffing with CR stripped showed ZERO content
+# change in every single one. The baseline was not detecting tampering, it was detecting Windows.
+#
+# That matters more than one stale lockfile. Both installs run `git clone` through
+# Install-Alex.cmd, so without this file S7 would have fired tamper findings at the first two family installs
+# on day one, for files that were pristine. Rehashing alone would have fixed this checkout and
+# broken theirs, which is why the fix is here and not in the lockfile.
+
+# Every text file is LF in the repository and on every checkout (2026-09-24, fleet Fix A, review
+# findings F01 and F02). Without this line nothing decided line endings except each machine's
+# core.autocrlf, so this Windows checkout held 38 files as CRLF over LF blobs, `git status` called
+# them clean because the stat cache cannot see a line ending, and the template build copied the
+# CRLF bytes to the Linux VM, where a CR in a shell script is a broken script. `auto` leaves binary
+# files alone. It sits ABOVE every other rule on purpose: the later, more specific lines win, so
+# skills stay byte-exact, the Windows launchers stay CRLF and the JSON pins below still apply.
+* text=auto eol=lf
+
+# Skill content is hashed byte-for-byte. Never convert it, on any platform.
+.agents/skills/** -text
+
+# Windows batch and PowerShell want real CRLF. cmd.exe is unreliable with LF-only files,
+# especially around labels and goto, which is exactly where the F-03 guard bug lived.
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# macOS launchers (2026-08-31): a .command IS a shell script, and bash needs LF. The same file
+# checked out with CRLF fails with ": command not found" on line 1 - the mirror image of the
+# cmd.exe rule above, for the same reason.
+*.command text eol=lf
+
+# Virtual Alex (2026-09-22): two writers on one repo, with git as the arbiter. A session and a
+# Routine both APPEND to these files, and the default merge driver turns two appended tails into
+# a conflict. The union driver concatenates both sides, so the rebase in scripts/autosave.sh --stop
+# completes instead of landing on a rescue branch. Only files that are append-only by contract
+# belong here: union on a file that is rewritten would silently duplicate content. Inert on a
+# laptop install, where every one of these paths is gitignored.
+vault/log.md merge=union
+outputs/ledger.jsonl merge=union
+system/human-actions.jsonl merge=union
+system/status-rotate-journal.jsonl merge=union
+system/run-log.jsonl merge=union
+vault/projects/self-review/close-out-log.md merge=union
+vault/projects/self-review/lessons.jsonl merge=union
+
+# JSON standard, rule 1 (docs/json-standard.md): an ENFORCED file is LF on every checkout. Added
+# 2026-09-23 with validate-alex V21. Without this, a clone made with core.autocrlf=true (the Git for
+# Windows default, which Install-Alex.cmd only turns off AFTER the first clone, and GitHub's
+# windows-latest runner) writes CRLF into the working copy of a file whose committed bytes are
+# correct, and V21 then refuses a commit that did nothing wrong. Per path, never a *.json class
+# rule: a class rule would renormalise hand-edited files that are not on the helper, which is a
+# reformat outside the writer (anti-goal 1). Every path in system/kit-manifest.json
+# json_standard.enforced[] gets a line here in the commit that enforces it; test-json-standard.mjs
+# fails when one is missing.
+system/employer-data-allowlist.json text eol=lf
+system/migrations-applied.json text eol=lf
+system/fleet.json text eol=lf
+system/install-profile.example.json text eol=lf

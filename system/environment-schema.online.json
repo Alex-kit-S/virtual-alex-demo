@@ -1,0 +1,33 @@
+{
+  "_readme": "Virtual Alex environment schema (2026-09-22). scripts/bootstrap.mjs loads THIS file instead of environment-schema.json when CLAUDE_CODE_REMOTE=true, which is what a Claude Code cloud session exports. A cloud session is a fresh Ubuntu VM with git, node and python already on it and nothing installed by Alex, so the doctor's whole job online is three things: the runtimes are present, the skill links match the lock, and origin is configured. Every laptop-only expectation is deliberately absent: no scheduler jobs (Routines are the schedule, and they live on claude.ai, not in a scheduler the doctor can ask), no secret files (no credentials ledger exists online; connectors carry the credentials), no ~/.claude/settings.json (the user file never reaches the VM; the repo's .claude/settings.json carries the env block), no core.longpaths (a Linux concern of exactly zero). The doctor skips a section whose rule block is absent here, so this file cannot print a MISS for a thing the platform does not have, and a report that never shows a false MISS is a report the owner keeps reading. The tool id is python3 because that is the name on the image; the laptop schema says python because that is the name on Windows.",
+  "git_expectations": {
+    "note": "origin is the owner's private repo on GitHub, reached through the cloud session's proxy. The autosave (scripts/autosave.sh) pushes to it after every file write; without origin nothing is saved.",
+    "remote": "origin"
+  },
+  "junction_rule": {
+    "link_dir": ".claude/skills",
+    "note": "Online the links are real symlinks, tracked in the owner's repo since the first /setup session created them with `node scripts/bootstrap.mjs --repair-links` on the Linux VM. The template itself carries none; a Windows checkout of the template must never commit them (core.symlinks=false there turns each link into a text file).",
+    "target_dir": ".agents/skills"
+  },
+  "tools": [
+    {
+      "id": "git",
+      "required": true,
+      "restore": "Part of the cloud image. If it is absent the session cannot have cloned the repo, so this line cannot print MISS in a running session; it exists so the schema names every runtime the Kit needs.",
+      "version_args": "--version"
+    },
+    {
+      "id": "node",
+      "min_major": 22,
+      "required": true,
+      "restore": "Part of the cloud image (node 22). Every script in the Kit is node builtins only; nothing is installed. If the image ever drops node 22, INSTALL-ONLINE.md says a one-line setup script becomes mandatory that day.",
+      "version_args": "--version"
+    },
+    {
+      "id": "python3",
+      "required": true,
+      "restore": "Part of the cloud image (python 3 with sqlite and FTS5, which scripts/vault_search.py needs). Nothing is installed.",
+      "version_args": "--version"
+    }
+  ]
+}

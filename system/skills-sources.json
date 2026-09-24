@@ -1,0 +1,137 @@
+{
+  "_readme": "Config-as-DATA for the #25 Evolution skills lane (added 2026-07-11). The daily landscape monitor (scripts/landscape-monitor.js) reads this to scan agent-skill directories; the weekly installer (scripts/skills-installer.js) reads the trust_allowlist + weekly_install_cap + audit rules. Editing this file changes behavior WITHOUT touching code (SOURCES-as-data ground rule). API shapes below were probed live 2026-07-11; if a directory changes its JSON, fix the `map` here, not the monitor. skillhub.club is DISCOVERY-ONLY: its github_stars are whole-repo/mirror-bot stars (noise), its own simple_score is null, and installs always resolve to + audit the GitHub source (never its one-click). The trust_allowlist is the real filter, not popularity.",
+  "weekly_install_cap": 3,
+  "_cap_note": "The 'safe != free' budget guard (skills-sh-sweep.md): every installed skill taxes every session's context + matching surface. Never auto-install more than this many per weekly eval; the rest fall to the digest.",
+  "max_log_per_run": 40,
+  "_max_log_note": "Hard ceiling on skill rows the monitor appends per run, strongest candidates first (real install counts before repo stars). Keeps the weekly eval prompt bounded. Stars-based directories (skillsmp/skillhub) additionally log ONLY trust_allowlist authors, since their star counts are whole-repo/mirror-bot noise.",
+  "portfolio_keywords": [
+    "crm",
+    "obsidian",
+    "pdf",
+    "notion",
+    "gmail",
+    "calendar",
+    "email",
+    "meeting",
+    "receipt",
+    "invoice",
+    "content",
+    "research",
+    "debugging",
+    "testing",
+    "backup",
+    "encryption",
+    "voice",
+    "tts",
+    "transcription",
+    "excel",
+    "spreadsheet",
+    "scheduling",
+    "security audit",
+    "knowledge graph",
+    "web scraping"
+  ],
+  "_keywords_note": "Derived from the projects this install ships + their domains; an owner adds the domains of their own projects (a job search adds resume and interview, a rental adds its platform). Never one person's interests as everyone's default. Keep the list <= 45 so a single daily run stays under skillsmp.com's 50-req/day anon cap. The eval judges fit against the real projects; these just cast the net.",
+  "revoked": [],
+  "_revoked_note": "Skill names or whole owner/repo sources (case-insensitive) the installer must refuse, added 2026-08-05 (enterprise-assessment idea 4). A revoked candidate is flagged, never installed; an ALREADY-installed revoked skill is reported for manual removal every weekly run but never auto-removed (auto-install was approved 2026-07-11, auto-REMOVE never was).",
+  "trust_allowlist": [
+    "anthropics",
+    "github",
+    "kepano",
+    "czlonkowski",
+    "obra",
+    "davila7",
+    "mattpocock",
+    "makenotion",
+    "openai"
+  ],
+  "_allowlist_note": "Author namespaces (the owner segment of owner/repo) eligible for AUTO-INSTALL. A skill from any other author is still discovered + logged + can appear in the digest, but is NEVER silently installed (it routes to 'Flagged, manual review'). This is what neutralizes skillhub.club mirror bots (clawdbot, openclaw, etc.). Seeded with the already-installed sources (skills-lock.json) + official orgs (makenotion, openai). the owner edits to add trust; the installer also auto-trusts any author already present in skills-lock.json.",
+  "directories": [
+    {
+      "name": "skills.sh",
+      "enabled": true,
+      "role": "primary",
+      "url_template": "https://www.skills.sh/api/search?q={q}",
+      "items_path": "skills",
+      "map": {
+        "name": "name",
+        "repo": "source",
+        "popularity": "installs",
+        "srcId": "id"
+      },
+      "popularity_kind": "installs",
+      "min_popularity": 400
+    },
+    {
+      "name": "skillsmp.com",
+      "enabled": true,
+      "role": "cross-check",
+      "url_template": "https://skillsmp.com/api/v1/skills/search?q={q}",
+      "items_path": "data.skills",
+      "map": {
+        "name": "name",
+        "author": "author",
+        "github_url": "githubUrl",
+        "popularity": "stars",
+        "srcId": "id"
+      },
+      "popularity_kind": "stars",
+      "min_popularity": 0,
+      "_note": "50 req/day anon cap. Gives repo stars (weak signal), not installs; used mainly to widen discovery + confirm skills.sh finds. Repo resolved by parsing owner/repo out of github_url."
+    },
+    {
+      "name": "skillhub.club",
+      "enabled": true,
+      "role": "discovery-only",
+      "url_template": "https://www.skillhub.club/api/search?q={q}",
+      "items_path": "skills",
+      "map": {
+        "name": "name",
+        "author": "author",
+        "repo_url": "repo_url",
+        "popularity": "github_stars",
+        "srcId": "id"
+      },
+      "popularity_kind": "stars",
+      "min_popularity": 0,
+      "_note": "Low trust (your 07-11 finding). github_stars is whole-repo/mirror-bot noise, simple_score is null. Discovery only: never installed except via allowlist + GitHub-source audit. repo_url like https://github.com/owner/repo#... -> owner/repo."
+    }
+  ],
+  "audit": {
+    "_note": "Deterministic source-level audit run by skills-installer.js BEFORE any npx skills add. Any hit here = the skill is NOT installed and drops to the digest as 'Flagged, manual review'. This is the automated validation gate that stands in for the removed human gate.",
+    "block_repo_paths": [
+      "hooks/",
+      "hook.json",
+      ".claude/hooks/",
+      "postinstall",
+      "preinstall"
+    ],
+    "block_manifest_keys": [
+      "postInstall",
+      "preInstall",
+      "install",
+      "lifecycleScripts"
+    ],
+    "_tokens_note": "Genuine execution/destruction signals only. Substrings like 'token'/'secret'/'process.env' were removed - they false-positive on knowledge skills that merely DISCUSS tokens/env, and the allowed_outbound_domains check below is what actually catches data exfiltration.",
+    "block_if_scripts_touch": [
+      "child_process",
+      "spawnSync",
+      "execSync",
+      "eval(",
+      "fs.rm",
+      "fs.unlink",
+      "rimraf",
+      "Invoke-Expression"
+    ],
+    "allowed_outbound_domains": [
+      "github.com",
+      "raw.githubusercontent.com",
+      "api.github.com",
+      "docs.n8n.io",
+      "n8n.io",
+      "anthropic.com",
+      "docs.anthropic.com",
+      "modelcontextprotocol.io"
+    ]
+  }
+}

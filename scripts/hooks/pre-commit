@@ -1,0 +1,99 @@
+#!/bin/sh
+# pre-commit - VIRTUAL ALEX VARIANT of the Kit's commit gate (scripts/build-online-template.mjs copies
+# it into the online tree at scripts/hooks/pre-commit; the Kit's own hook is not read there).
+#
+# What differs from the Kit's hook, and why (Virtual Alex plan Phase 3, seat 5 C2, C3, C5, C13,
+# 2026-09-23). The online repo is PRIVATE and IS the owner's disk: every autosave commits through this
+# gate (SessionStart sets core.hooksPath), so a leg that cannot run or that blocks on hygiene turns a
+# vault page into a page that dies with the VM. Four legs, in this order:
+#   - secret-scan --staged           the in-repo scanner, first, cannot be absent, fails closed
+#   - the size guard                 no staged blob over 10 MB (MAX_BLOB_BYTES, the twin of the same
+#                                    number in scripts/autosave.sh)
+#   - employer-data-guard --staged   IN THE SLOT personal-data-scan holds on a laptop. That scanner's
+#                                    premise is a public repo and its NAMES leg would block the vault
+#                                    itself; this one is the mechanical half of the constitution's
+#                                    "Employer Data Stays Out Of The Vault" order (a colleague's address
+#                                    at the employer domain, a personnummer, a spreadsheet export under
+#                                    vault/ or inbox/), armed by the two profile fields /setup writes
+#   - (clone-scrub is NOT a leg here: it scans for the Kit author's identity, which is right for the
+#     shared template and wrong for an owner's own notes; see the note where leg 4 used to be)
+#   - validate-alex --context=pre-commit --changed
+#                                    under CLAUDE_CODE_REMOTE=true the DRIFT legs WARN and the CONTENT
+#                                    legs (V10 NEVER-TOUCH, V11 forced-add, V21 the JSON standard on
+#                                    the files in kit-manifest.json json_standard.enforced[]) still block
+# No gitleaks leg: the binary is never on the cloud VM, and an absent extra leg that prints a warning
+# on every autosave is noise on the one surface the owner reads. The secret scan above is the leg.
+#
+# Escape hatch: git's standard `--no-verify`. Test: node scripts/tests/test-employer-data-guard.mjs
+# runs this file end to end in a throwaway repo (every refusal shown before the pass).
+
+ROOT="$(git rev-parse --show-toplevel)" || exit 1
+
+if command -v node >/dev/null 2>&1; then
+  NODE=node
+else
+  echo "pre-commit: BLOCKED - node not found; the content legs and validate-alex CANNOT run, so this commit is not validated (fail closed)." >&2
+  exit 1
+fi
+
+# --- 1. secret-scan on the STAGED blobs. A HIT (exit 2) blocks; a scanner that cannot run blocks too.
+"$NODE" "$ROOT/scripts/secret-scan.mjs" --staged
+SSC=$?
+if [ "$SSC" -eq 2 ]; then
+  echo "pre-commit: BLOCKED - secret-scan found a credential shape in the STAGED content (file:line and pattern above; the value is never printed)." >&2
+  echo "pre-commit: remove it, or put '# secret-scan: allow' on that line to accept a reviewed exception. A pushed secret must be ROTATED, not just deleted." >&2
+  exit 1
+elif [ "$SSC" -ne 0 ]; then
+  echo "pre-commit: BLOCKED - secret-scan errored (exit $SSC); fail-closed (cannot certify the commit is secret-free)." >&2
+  exit 1
+fi
+echo "pre-commit: secret-scan staged scan clean."
+
+# --- 2. the size guard: no staged blob over 10 MB. MAX_BLOB_BYTES is the same number as
+#        MAX_BLOB_BYTES in scripts/autosave.sh; change both or neither.
+MAX_BLOB_BYTES=10485760
+BIG="$(git diff --cached --name-only --diff-filter=AM --no-renames -z | tr '\0' '\n' | while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  size="$(git cat-file -s ":$f" 2>/dev/null)" || { echo "pre-commit: BLOCKED - cannot read the staged blob for $f (git cat-file failed); fail-closed" >&2; echo "ERR $f"; continue; }
+  if [ "$size" -gt "$MAX_BLOB_BYTES" ]; then
+    echo "pre-commit: BLOCKED - $f is $size bytes, over the $MAX_BLOB_BYTES byte size guard (10 MB). A file nobody can diff does not belong in a repo that is the disk." >&2
+    echo "BIG $f"
+  fi
+done)"
+if [ -n "$BIG" ]; then
+  echo "pre-commit: unstage it (git restore --staged <path>) and keep it outside the repo, or gitignore it. 'git commit --no-verify' overrides deliberately." >&2
+  exit 1
+fi
+echo "pre-commit: size guard clean (no staged blob over $MAX_BLOB_BYTES bytes)."
+
+# --- 3. employer-data-guard on the STAGED blobs. A HIT (exit 2) blocks; a guard that cannot run
+#        (a broken allowlist, a git failure) blocks too. With no employer in the profile the address
+#        leg is disarmed and says so; the personnummer and export legs run regardless (master ruling
+#        2026-09-23). It never guards silently.
+"$NODE" "$ROOT/scripts/employer-data-guard.mjs" --staged
+EDG=$?
+if [ "$EDG" -eq 2 ]; then
+  echo "pre-commit: BLOCKED - employer-data-guard found employer data in the STAGED content (file:line and leg above; the value is never printed)." >&2
+  echo "pre-commit: employer data stays out of the vault. Remove it, or record a reviewed exception WITH ITS REASON: node scripts/employer-data-guard.mjs --allow-address <a> --reason <r> (or --allow-path)." >&2
+  exit 1
+elif [ "$EDG" -ne 0 ]; then
+  echo "pre-commit: BLOCKED - employer-data-guard errored (exit $EDG); fail-closed (cannot certify the commit is employer-data-free)." >&2
+  exit 1
+fi
+
+# --- (no donor-identity leg online, removed 2026-09-23 on test day). clone-scrub guards the
+#     REDISTRIBUTABLE tree: the Kit's own gate runs it, and since 2026-09-24 the template build runs
+#     it over every generated tree before it ships (scripts/build-online-template.mjs, donorScrub).
+#     It is not in this tree at all: its patterns are the author's identity. In an owner's repo it refused,
+#     in silence, every autosave that named the Kit's author, a Routine's run-log row included, and an
+#     owner's vault will name the friend who set it up. The owner's record may name anyone.
+
+# --- 4. validate-alex. Drift legs WARN under CLAUDE_CODE_REMOTE=true; content legs block everywhere.
+echo "pre-commit: validate-alex (full suite, context=pre-commit; V10 = NEVER-TOUCH guard, V11 = forced-add guard on the staged changeset, V21 = JSON standard on enforced files; drift legs WARN under CLAUDE_CODE_REMOTE=true)."
+"$NODE" "$ROOT/scripts/validate-alex.js" --context=pre-commit --changed
+STATUS=$?
+if [ $STATUS -ne 0 ]; then
+  echo "pre-commit: BLOCKED - validation failed (see FAILED lines above)." >&2
+  exit $STATUS
+fi
+exit 0

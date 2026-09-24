@@ -1,0 +1,909 @@
+{
+  "version": 2,
+  "lockSemantic": "computedHash = sha256 of the INSTALLED skill file at .agents/skills/<name>/SKILL.md (hash-of-installed-disk). Re-baselined 2026-07-17 (three-plan validation P0a/S7-step-1): the prior v1 hashes were hash-at-fetch-of-source and had drifted from installed content for 22/31 skills - the drift traced cleanly to the install mechanism (npx-installed/description-curated skills drifted; raw-fetch DATA installs still matched), content-reviewed script-free markdown, not tampering. skillPath fields are the HISTORICAL source-repo-relative paths the skill was fetched from; they do NOT resolve on disk and are provenance only. Recovery check S7 (WS-A security sweep) recomputes this hash against installed content. Since 2026-08-05 (enterprise-assessment idea 4) auto-installs also carry sourceCommit = the exact upstream commit SHA the audit ran against and the post-install byte-verify held the installed copy to, plus installedAt; entries installed before that date have no sourceCommit (their provenance is hash-only, by history). | sourceType \"vendored-global\" (added 2026-08-17) marks a skill copied from a builder machine rather than fetched from a named repository. It has no upstream commit to pin, so computedHash over the INSTALLED SKILL.md is the whole tamper baseline for those rows, and the audit note records what was checked.",
+  "rebaselined": "2026-08-17",
+  "skills": {
+    "ab-testing": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/ab-testing/SKILL.md",
+      "computedHash": "1fd229160f6014f3f2d7c92cc7d2f991fbf8dc9ed68aac9793c71b408a6d1144",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.758Z"
+    },
+    "ad-creative": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/ad-creative/SKILL.md",
+      "computedHash": "e874d7bde2f55a5f0687c938ea9d3c1f210a73ff948d58ba3ee0e08631587702",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.758Z"
+    },
+    "ads": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/ads/SKILL.md",
+      "computedHash": "8be65c0dfa275bb42f238530e7ba4efe9a9d45bee74eaac02f0f2a644a8f1857",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.759Z"
+    },
+    "agent-development": {
+      "source": "anthropics/claude-code",
+      "sourceType": "github",
+      "skillPath": "plugins/plugin-dev/skills/agent-development/SKILL.md",
+      "computedHash": "ff3324078bbeef3e214157391795360e148892e9c6735f1fc049f397aa939c80"
+    },
+    "agent-reach": {
+      "source": "Panniantong/Agent-Reach",
+      "sourceType": "github",
+      "skillPath": "agent_reach/skill/SKILL_en.md",
+      "computedHash": "5da8c7d5deba0678dedf7adb7d0f0f815f6d9dbdc54b712364bc0845a80b0531",
+      "note": "DATA-only install of the SKILL markdown + 6 references. Package/CLI deliberately NOT installed. SKILL.md carries a locally-added ALEX SCOPE GUARD and a rewritten frontmatter description, so computedHash intentionally differs from upstream.",
+      "localEdit": "2026-08-17: donor identity and pointers to projects that do not exist in this system were removed from the locally-added description and guard text. Content otherwise upstream."
+    },
+    "ai-seo": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/ai-seo/SKILL.md",
+      "computedHash": "009333fb0cd44942caf83ae95a1acee24b1bfbb15eca14107b243106e3f32322"
+    },
+    "analytics": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/analytics/SKILL.md",
+      "computedHash": "16aab197f87bf6e2599d179061f1947d96acafe0a340837432d8ab96d2f8c55a",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.760Z"
+    },
+    "aso": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/aso/SKILL.md",
+      "computedHash": "158f42a00846d9e4bb2a27c0ecf8c10745891a45916dc3de9127a124c0a6dcfc",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.761Z"
+    },
+    "babysit": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/babysit/SKILL.md",
+      "computedHash": "4af5e29175433377b007dbe1d4759938d23a0b88d899ed2740807fa92e87c3f8",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "banner-design": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/banner-design/SKILL.md",
+      "computedHash": "b55b30c763e2aa9aac953021bcb72bd03669f187150fc0815ab1313846b79466",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "brand": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/brand/SKILL.md",
+      "computedHash": "1312fe0046f4b52fc53695efa102da6f900688c32f839dbe154e803cb8cea1ad",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "career-changer-translator": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/career/career-changer-translator/SKILL.md",
+      "computedHash": "bc0b6179e2eacee5c485ed6632a6324699361cbe3a4b503786c627e8ad5bd5fa"
+    },
+    "churn-prevention": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/churn-prevention/SKILL.md",
+      "computedHash": "88fd25b77e44ef3689d68d54091df9659a40f5e905c8bdeb09bdeed3f049ad67",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.762Z"
+    },
+    "co-marketing": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/co-marketing/SKILL.md",
+      "computedHash": "893a3115b2e07abd5fa99568de6eb168a086db044cf44f4ba29e96ec324cbd74",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.762Z"
+    },
+    "cold-email": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/cold-email/SKILL.md",
+      "computedHash": "b7f8d793169a5111c857e5720c6b80028686cc95d5a0d0d6570957c2710aff9e",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.763Z"
+    },
+    "community-marketing": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/community-marketing/SKILL.md",
+      "computedHash": "edd8060b63820e620a0612af0a280cf3ee68d3eab80684932257205c8327d971",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.764Z"
+    },
+    "competitor-profiling": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/competitor-profiling/SKILL.md",
+      "computedHash": "ea7b5b7feb79ead8df038653c33aae96d38890784018a2b0afae9b2a1e21b3af",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.765Z"
+    },
+    "competitors": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/competitors/SKILL.md",
+      "computedHash": "99e9ea715b1ac6dbaedda345a27358fb5e099f7d4fd5be63789d6e65cf2a6f46",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.765Z"
+    },
+    "content-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/content-strategy/SKILL.md",
+      "computedHash": "0611532b2a0dce8d0d5b783c99bba10d13a6d5fd7eecd829974012f74ea33258",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.766Z"
+    },
+    "context7-mcp": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/context7-mcp/SKILL.md",
+      "computedHash": "6f07fd4d6cbf96c00c66ef859c2981efb0795315069f55af30c0ae4f28b77690",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "copy-editing": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/copy-editing/SKILL.md",
+      "computedHash": "9b5a20be3dc5513c8f0b4f4c4960857e4d28ed83698a5b33c8dde9dc75a47bf6",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.767Z"
+    },
+    "copywriting": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/copywriting/SKILL.md",
+      "computedHash": "ecdaabca28863d1472f79ba637842fdf4ac2fd9acc92b215ab7f152e757b2a33",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.767Z"
+    },
+    "cover-letter-generator": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/career/cover-letter-generator/SKILL.md",
+      "computedHash": "508ab32176332a27b434912b632ddd01c314c135480ee3d35eb06e934a919e43"
+    },
+    "crm-cleanup": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "small-business/skills/crm-cleanup/SKILL.md",
+      "computedHash": "dedcd41f8f2d3aa8715be91a3d7ffb8e905dabd17f20d71cbb723148c2e682e7",
+      "localEdit": "2026-08-17: donor identity and pointers to projects that do not exist in this system were removed from the locally-added description and guard text. Content otherwise upstream."
+    },
+    "crm-maintenance": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "small-business/skills/crm-maintenance/SKILL.md",
+      "computedHash": "9a32bbea8ea833436b75d9d8546260b65df8ecb91bfa592c91810d45395370df",
+      "localEdit": "2026-08-17: donor identity and pointers to projects that do not exist in this system were removed from the locally-added description and guard text. Content otherwise upstream."
+    },
+    "cro": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/cro/SKILL.md",
+      "computedHash": "199016bec3b44bc6a7507b111b6028f6550cc852cd54c7d0df789f15d6f814c4",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.768Z"
+    },
+    "customer-research": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/customer-research/SKILL.md",
+      "computedHash": "f44c116c46904bba256604f62e97048c2872f389a963843254129cc511cdf1ff",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.769Z"
+    },
+    "defuddle": {
+      "source": "kepano/obsidian-skills",
+      "sourceType": "github",
+      "skillPath": "skills/defuddle/SKILL.md",
+      "computedHash": "10673a4dc70a0a057612d443243ab7a5aa4abdd4a0fadc3f6eec5fd71ad5a971"
+    },
+    "design": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/design/SKILL.md",
+      "computedHash": "87a5278f1fdb2e2e51c7506b69aed58efbf261185e524e37450b866e594dd102",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "design-is": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/design-is/SKILL.md",
+      "computedHash": "e525076b97709b82a42fe24f80fabac663e395b583088e9d7d8ecd386182ea16",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "design-system": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/design-system/SKILL.md",
+      "computedHash": "eb484103939b1ba2778c351f0c97b7899ea09ebe143bafb7eed29385dfedf854",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "diagrammer": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/creative-design/diagrammer/SKILL.md",
+      "computedHash": "31ce90c465a21554401a46a950bf6e74a29ad384d28290e683b10efa8a69c983"
+    },
+    "directory-submissions": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/directory-submissions/SKILL.md",
+      "computedHash": "dd08854f5cd1e16413dd588b13e02a32ce01dd3a9f4e9b1099f92a7b635ac24a",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.770Z"
+    },
+    "do": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/do/SKILL.md",
+      "computedHash": "80352f408e8b213034616dce0d1dbb8b861e3bbe57bebca9c326762025cbda5d",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "emails": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/emails/SKILL.md",
+      "computedHash": "1fbd54df4c59f48408057e7db0dfb1a53c033e6a4ca5cd1927a47c51ec28d8f1",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.771Z"
+    },
+    "excalidraw-diagram": {
+      "source": "breferrari/obsidian-mind",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/excalidraw-diagram/SKILL.md",
+      "computedHash": "482a7499122775f84cdb36e832c8e756f7c3d60aa783f2a56715fa2d7c489349"
+    },
+    "free-tools": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/free-tools/SKILL.md",
+      "computedHash": "76dc4535041899581cfea32a77094ed19dda5de718e9345caf1f236356f9a6b7",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.771Z"
+    },
+    "frontend-design": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/frontend-design/SKILL.md",
+      "computedHash": "b81e2ff87ed8fa4d6c377ccb127a7254c9e6a77e3ae94f21e6b514f7bb2945a0",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "image": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/image/SKILL.md",
+      "computedHash": "c34b67e249e558410ee960043d0de3c1d188dc3b6ba36d7714c16ec6f1fad46e",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.772Z"
+    },
+    "image-manipulation-image-magick": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/image-manipulation-image-magick/SKILL.md",
+      "computedHash": "fba25bd07b134f456f7f6d217fd4d385f67286957387f59115a8275c391769c4",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "template-parked 2026-08-31: dead on every install (ImageMagick is not in any installer's tool list, and the skill carries hardcoded C:\\ paths). Wake it the day an installer ships ImageMagick."
+    },
+    "interview-prep": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "human-resources/skills/interview-prep/SKILL.md",
+      "computedHash": "ffab824365206f1fc6d9f1296f06910919263d7ab4ef0616b72bbecffcfc9b73",
+      "localEdit": "2026-08-17: donor identity and pointers to projects that do not exist in this system were removed from the locally-added description and guard text. Content otherwise upstream."
+    },
+    "job-description-analyzer": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/career/job-description-analyzer/SKILL.md",
+      "computedHash": "cea1f8412d32b8756f1b8c990fac09015d11867b8ec2e6a3249e0d65072e18e0"
+    },
+    "json-canvas": {
+      "source": "kepano/obsidian-skills",
+      "sourceType": "github",
+      "skillPath": "skills/json-canvas/SKILL.md",
+      "computedHash": "97d1ae0728955c4203922753d5656890e5e4dd371b8306ea11884f9b510f1b85"
+    },
+    "karpathy-guidelines": {
+      "source": "multica-ai/andrej-karpathy-skills",
+      "sourceType": "github",
+      "skillPath": "skills/karpathy-guidelines/SKILL.md",
+      "computedHash": "6e22cc54cb02a5e98ae42d06d9d7292db0c1b43894831b32879beb0166b2aea7"
+    },
+    "launch": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/launch/SKILL.md",
+      "computedHash": "6d8bbd61449c48c458b20457c0b698386fe808e7063a7baadc197fc179bd94bb",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.772Z"
+    },
+    "lead-magnets": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/lead-magnets/SKILL.md",
+      "computedHash": "bfb1e260e56fb11611bfac94236e7ebf79433e3350012ecce2379eef0af25af8",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.773Z"
+    },
+    "learn-codebase": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/learn-codebase/SKILL.md",
+      "computedHash": "8d916994d6be8a5d3dc2b1d64803e1e46d416fa70efacb0e4f147f881d2c8cdd",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "linkedin-profile-optimizer": {
+      "source": "sergebulaev/linkedin-skills",
+      "sourceType": "github",
+      "skillPath": "skills/linkedin-profile-optimizer/SKILL.md",
+      "computedHash": "84ae765ba0813e1ba6a11236b13d995cdd0bc21b96242d691dece5a8b3c81308",
+      "sourceCommit": "e59dd61bd62c72d9950b3629eedb7cf787872d0b",
+      "installedAt": "2026-09-14",
+      "note": "Ported from personal-os 2026-09-14, REPLACED the davila7/claude-code-templates version. DATA install: 6 markdown files, script-free, zero install hooks. computedHash intentionally differs from upstream: 59 em/en dashes removed at source + a generalized SCOPE GUARD + a curated description. The other 11 skills in the bundle and its Publora/Apify/Pixfaro backends are NOT installed."
+    },
+    "make-plan": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/make-plan/SKILL.md",
+      "computedHash": "1a6fd2e8dcde455ed8ce9005066b02b609c119491bbb17f0a9dbe538aaa23944",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "marketing-council": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing-council/SKILL.md",
+      "computedHash": "0b94358427c344e1f5f50169770cce44e0b065ec8b05fc887a800daed008ac31",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.773Z"
+    },
+    "marketing-ideas": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing-ideas/SKILL.md",
+      "computedHash": "7fe1f79d008129c359f28ec733837693567a11f54bd578e1fd0d178ac69bbb8d",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.774Z"
+    },
+    "marketing-loops": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing-loops/SKILL.md",
+      "computedHash": "db4ba419ee74c7ef4c6dacffdf92fa4038e720640a4b4b95e8766ad9ff269898",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.774Z"
+    },
+    "marketing-plan": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing-plan/SKILL.md",
+      "computedHash": "548e1bd8f31fdef3ffb8edf4f3218a8162b4ac2f04b639affe547bee6dd0cba0",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.775Z"
+    },
+    "marketing-psychology": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing-psychology/SKILL.md",
+      "computedHash": "573bbe4f6e300e7fb75299e314f56e26382d284782caa2ae0e0f33eb2e646548",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.776Z"
+    },
+    "mermaid-visualizer": {
+      "source": "breferrari/obsidian-mind",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/mermaid-visualizer/SKILL.md",
+      "computedHash": "131decc93edbd3965782951f62f4f26364d895b471d140f8b0f3326c39978efa"
+    },
+    "n8n-cli": {
+      "source": "n8n-io/n8n",
+      "sourceType": "manual",
+      "skillPath": ".agents/skills/n8n-cli/SKILL.md",
+      "computedHash": "8ede540cb5c1d52c90fa800f2256ffdf3567e259473d5782901c5e69037c1869",
+      "note": "manual single-file copy from the official n8n pack (2026-07-11); upstream repo path unverified, hash is of the local canonical SKILL.md"
+    },
+    "n8n-code-javascript": {
+      "source": "czlonkowski/n8n-skills",
+      "sourceType": "github",
+      "skillPath": "skills/n8n-code-javascript/SKILL.md",
+      "computedHash": "fba689826dd62fee2f7f18ea4deef7bf005953313d12196d8dfaf93f493effb0"
+    },
+    "n8n-mcp-tools-expert": {
+      "source": "czlonkowski/n8n-skills",
+      "sourceType": "github",
+      "skillPath": "skills/n8n-mcp-tools-expert/SKILL.md",
+      "computedHash": "c07d0d67e76055b88742edd878f5c2a833a2c8a894002d78fd00997b79a87859"
+    },
+    "n8n-node-configuration": {
+      "source": "czlonkowski/n8n-skills",
+      "sourceType": "github",
+      "skillPath": "skills/n8n-node-configuration/SKILL.md",
+      "computedHash": "7f851b91dca19a0e0ea32c74499db22cb43507f2fe95e195bdecf77bcf00ba20"
+    },
+    "n8n-validation-expert": {
+      "source": "czlonkowski/n8n-skills",
+      "sourceType": "github",
+      "skillPath": "skills/n8n-validation-expert/SKILL.md",
+      "computedHash": "a0cb1ea68087bf4ed9134acbffb077a7e55841ea3059ac1e76410aa27074845e"
+    },
+    "n8n-workflow-patterns": {
+      "source": "czlonkowski/n8n-skills",
+      "sourceType": "github",
+      "skillPath": "skills/n8n-workflow-patterns/SKILL.md",
+      "computedHash": "10ad2eee8d602f187f7cba11eaf532171ef5845c8e9b0ac1cc91b0784cd111ed"
+    },
+    "no-ai-slop": {
+      "source": "petergyang/no-ai-slop",
+      "sourceType": "github",
+      "sourceCommit": "d30eddb9e04562234f2070b5ee63ca4649d9a05e",
+      "skillPath": "skills/no-ai-slop/SKILL.md",
+      "computedHash": "c2020e5a6b615817ee36322008144f7c313bc224691e78e5a6e1735affcbc246",
+      "note": "DATA-only install of SKILL.md + eval.md (both plain markdown, banned-pattern gate clean: zero scripts, hooks, remote fetches, exfil). MIT. SKILL.md carries a locally-added ALEX SCOPE GUARD and a rewritten frontmatter description, so computedHash intentionally differs from upstream. soul.md outranks this file on every voice conflict."
+    },
+    "obsidian-bases": {
+      "source": "kepano/obsidian-skills",
+      "sourceType": "github",
+      "skillPath": "skills/obsidian-bases/SKILL.md",
+      "computedHash": "c0037f20926c7d8591cdd040365e4c0e4c0c4146386a506f28f241faee9a27d9"
+    },
+    "obsidian-cli": {
+      "source": "kepano/obsidian-skills",
+      "sourceType": "github",
+      "skillPath": "skills/obsidian-cli/SKILL.md",
+      "computedHash": "b54257cdc0e5d04488b35b0c797bfe427b24359f0848d3c73924dcacf8da6358"
+    },
+    "obsidian-markdown": {
+      "source": "kepano/obsidian-skills",
+      "sourceType": "github",
+      "skillPath": "skills/obsidian-markdown/SKILL.md",
+      "computedHash": "7ad72e1f0a9081ed325e76b6402ad5de50a00e63e2341fd403a92f147234a007"
+    },
+    "offers": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/offers/SKILL.md",
+      "computedHash": "cdc291bdf93b9ce135c39f034283acaee136b453239b7fe712823fae4f2d5a12",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.777Z"
+    },
+    "oh-my-issues": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/oh-my-issues/SKILL.md",
+      "computedHash": "3920cd5184bb67110f120de0b4c4b5771d5d14747dbe22f7e49af03ecf0b7732",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "onboarding": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/onboarding/SKILL.md",
+      "computedHash": "15a802ffb73828730aba90b740426fbb8d2070721ee92d6f8737de4704e8ff0f",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.777Z"
+    },
+    "openai-agents-sdk": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/openai-agents-sdk/SKILL.md",
+      "computedHash": "efec8b573cd5783574164a9a97391f15dddfbf009369f33af887b5e7b3d4d724",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "pathfinder": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/pathfinder/SKILL.md",
+      "computedHash": "3f614419b219982c1bd6d5a04d555b5a68b8c7ef143b99043cef677a4937dbce",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "paywalls": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/paywalls/SKILL.md",
+      "computedHash": "d062c03f6b99e76ffaa367a1494ba80098b2033d4d74609b895373a024a8eac1",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.778Z"
+    },
+    "pdf": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/pdf/SKILL.md",
+      "computedHash": "9f78b8359fbd4943ad260a7a1e436e5a96503406d6c34e99f69223d647d85b9c"
+    },
+    "popups": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/popups/SKILL.md",
+      "computedHash": "6c66e7f923c1eebc7eb7b94971af2e8016d3b5316e14bb1ad4b15ed3522084ce",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.779Z"
+    },
+    "power-bi-dax-optimization": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/power-bi-dax-optimization/SKILL.md",
+      "computedHash": "96885a9fbce12c3d797f0308287f9474d319780edbe8c20eda1137867826a11a"
+    },
+    "power-bi-model-design-review": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/power-bi-model-design-review/SKILL.md",
+      "computedHash": "456f167db142b53b62a47873dde654eeea5468f9e68e3fb85a641c7f24fecf3d"
+    },
+    "power-bi-performance-troubleshooting": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/power-bi-performance-troubleshooting/SKILL.md",
+      "computedHash": "62507d22a45bc8bf39f83bf17a1bd3d07df8367ba5b621213175b89d48534d5d"
+    },
+    "pptx": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/pptx/SKILL.md",
+      "computedHash": "e5b0df918cbe9d62508b3cf808d73899633f82fc19f6258a25ef9f0de7e62125",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "pricing": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/pricing/SKILL.md",
+      "computedHash": "a5d1cfe49b80569089b3d80f29b92075cf7554cef7e3cf618ef705a348a133f0",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.779Z"
+    },
+    "product-marketing": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/product-marketing/SKILL.md",
+      "computedHash": "6dfd6bd485f62448385844cb9eceefcee0977c843d7a1c9e6077590d4e19d1ec",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.780Z"
+    },
+    "programmatic-seo": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/programmatic-seo/SKILL.md",
+      "computedHash": "15cb5979cab5263ede902a830e03342869256ece17905bff240eef498e27cde1",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.780Z"
+    },
+    "prospecting": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/prospecting/SKILL.md",
+      "computedHash": "beabb53a99b4df893216c18ba84198d7f2622cc83ef35043c09b218840498356",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.780Z"
+    },
+    "public-relations": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/public-relations/SKILL.md",
+      "computedHash": "d1aeff136f23e2bf3296d11e86d51abedfd08996fc8bf0c1637dd96faaa693a4",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.781Z"
+    },
+    "referrals": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/referrals/SKILL.md",
+      "computedHash": "4ddd01713b7ef3c3fb669fd3bb9a720641ee8db8b9ac327c35d6be3548a7f777",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.782Z"
+    },
+    "resume-ats-optimizer": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/career/resume-ats-optimizer/SKILL.md",
+      "computedHash": "7eb925d79a636ac6a0bb72d268ecb80f6ba4a9122a93b9930d5c7ae3aa1e3035"
+    },
+    "resume-builder": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/resume-builder/SKILL.md",
+      "computedHash": "f7e04ac4847325b371263dd1f3a4199cbf0f35e5f72ddbc08ca479d22ff57258",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "resume-bullet-writer": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/career/resume-bullet-writer/SKILL.md",
+      "computedHash": "a770b72e3599f6e1fe8eb56facb33973a1447cfbc1b40d899e270c0bb4e16488"
+    },
+    "resume-quantifier": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/career/resume-quantifier/SKILL.md",
+      "computedHash": "176ad6b35009ac4e529e04309bb6c0d40e4e300229457f54da61c28b193e20f4"
+    },
+    "resume-tailor": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/career/resume-tailor/SKILL.md",
+      "computedHash": "a3a2f78669661a45ca91ded663bb792e3181eae1b5753cb910b314186a550a0f"
+    },
+    "revops": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/revops/SKILL.md",
+      "computedHash": "bb27b16ad41c5c2d4fea14c12359c6a01fc755f2bb91140f0c2c43b05b3adb10",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.782Z"
+    },
+    "sales-enablement": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/sales-enablement/SKILL.md",
+      "computedHash": "d83c3244dd8e2e64d585f1ff0d760eff181587f06b90ceaf8127a4ce618265dd",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.783Z"
+    },
+    "schema": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/schema/SKILL.md",
+      "computedHash": "d8b7aa7bcd9727a87fb5470a6c9ee252b99a7ccb84f637d7c67c5d155b507e0b",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.783Z"
+    },
+    "seo-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/seo-audit/SKILL.md",
+      "computedHash": "3b03a2e07578e9964acac0b6907ae343a904c6547bfefe779ba326db5eedd1cb"
+    },
+    "signup": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/signup/SKILL.md",
+      "computedHash": "9395aabae64891ebdac5f31d17c83b9d47546dc0c9b22654c7b89e9b04da7cf6",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.784Z"
+    },
+    "site-architecture": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/site-architecture/SKILL.md",
+      "computedHash": "a47f693c6a4f45db89276d8c341b3aa3054090cc8002dd4a2635448d7d152492",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.784Z"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/skill-creator/SKILL.md",
+      "computedHash": "dcd4803e61e913e6fc27294184cd3a71f09f5e924ff20c8a9a20173e7b3c2bcf"
+    },
+    "skill-development": {
+      "source": "anthropics/claude-code",
+      "sourceType": "github",
+      "skillPath": "plugins/plugin-dev/skills/skill-development/SKILL.md",
+      "computedHash": "d40080c45d652dd3cc481d1e381cd7e6258091a87351fa1de67c6c8ecec3446e"
+    },
+    "slides": {
+      "source": "vendored from the builder's own global skills directory (~/.claude/skills) at kit build time",
+      "sourceType": "vendored-global",
+      "skillPath": ".agents/skills/slides/SKILL.md",
+      "computedHash": "e071a7ad7a72f10344d3fe55a29cebf8750a255ecbf98af2daee9e6432bd8b3a",
+      "parked": false,
+      "parkedAt": null,
+      "vendoredAt": "2026-08-17",
+      "audit": "read in full before vendoring: no install hooks, no process spawning to fetch remote code, no exfiltration. See THIRD-PARTY-NOTICES.md."
+    },
+    "sms": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/sms/SKILL.md",
+      "computedHash": "bf649cfac0e3851f28b4746dc0dccb51c7526935b64cae7dd237b1b948c58842",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.785Z"
+    },
+    "social": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/social/SKILL.md",
+      "computedHash": "8cc93d9b361622cdb640e87969747b85603bed2d268e923179f8dfb4799ec8c7",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.785Z"
+    },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/systematic-debugging/SKILL.md",
+      "computedHash": "3b20719eca4f0461cb51a195221320d775dcf03b6859271066a03a5132a6ce7a"
+    },
+    "video": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/video/SKILL.md",
+      "computedHash": "3b6d4864bae49dd3d60e7f6218e0de0803633989d68bdcf093a3771307387ac2",
+      "parked": true,
+      "parkedAt": "2026-08-16T10:53:02.786Z"
+    },
+    "webapp-testing": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/webapp-testing/SKILL.md",
+      "computedHash": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2"
+    },
+    "events": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/events/SKILL.md",
+      "sourceCommit": "e55de886fe7580ec75cdb7ded5092b33f7d4ed58",
+      "computedHash": "12db5ee8bf232424730a3f3b1645fd6b96539f250a3cdc7b0cb6ada0634c7384",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "attribution": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/attribution/SKILL.md",
+      "sourceCommit": "e55de886fe7580ec75cdb7ded5092b33f7d4ed58",
+      "computedHash": "e83c417f43434fff2a6c15a6af5b4a991339c66cecdfebda1e0c112853b846d9",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "influencer-marketing": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "skillPath": "skills/influencer-marketing/SKILL.md",
+      "sourceCommit": "e55de886fe7580ec75cdb7ded5092b33f7d4ed58",
+      "computedHash": "c2e13698e0aabd3f6b8a9af3f39c1cd36cd6cc564fc03b672bfcffaf7bbb80e2",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "google-business-profile": {
+      "source": "Namtanmk/Claude-Skills-Ultimate-Bundle",
+      "sourceType": "github",
+      "skillPath": "SEO & Search/google-business-profile/SKILL.md",
+      "sourceCommit": "a05175159ad8d274b680cc7ed2a65d359b54e70d",
+      "computedHash": "e7059f12c12e2aa848e65336bef7127ad6213954b387c8cef92d3c4c5cf08796",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "30x-seo-local": {
+      "source": "norahe0304-art/30x-seo",
+      "sourceType": "github",
+      "skillPath": "skills/30x-seo-local/SKILL.md",
+      "sourceCommit": "bb60a061b3cad68157991ac6427dea41c3be0371",
+      "computedHash": "78732f3e587d25c9def0098f7e4c684c78010b691ccf770c93bcd00896b7576d",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "cash-flow-forecast": {
+      "source": "openaccountant/skills",
+      "sourceType": "github",
+      "skillPath": "skills/business/cash-flow-forecast/SKILL.md",
+      "sourceCommit": "f5abe381f24b5b7d59f1d0b4a825b14494ff2034",
+      "computedHash": "64e224a996c5fe7ad2eec98c599b6ad0bad6b84a7f8e5c8c91fdac00781b1b4c",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "break-even-calc": {
+      "source": "openaccountant/skills",
+      "sourceType": "github",
+      "skillPath": "skills/business/break-even-calc/SKILL.md",
+      "sourceCommit": "f5abe381f24b5b7d59f1d0b4a825b14494ff2034",
+      "computedHash": "3a2301f01d85549b87af455f4deb6c20cbefc6271f028b91915a70c200e0e232",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "invoice-aging": {
+      "source": "openaccountant/skills",
+      "sourceType": "github",
+      "skillPath": "skills/business/invoice-aging/SKILL.md",
+      "sourceCommit": "f5abe381f24b5b7d59f1d0b4a825b14494ff2034",
+      "computedHash": "eb2bcc68c8e2d7a6744431cf36db8b2aae4d25239f5c6a26bc336cba6b9a7881",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "pricing-optimizer": {
+      "source": "openaccountant/skills",
+      "sourceType": "github",
+      "skillPath": "skills/business/pricing-optimizer/SKILL.md",
+      "sourceCommit": "f5abe381f24b5b7d59f1d0b4a825b14494ff2034",
+      "computedHash": "ae240ea6a67fc738187917bb6d2f985e3d47bcd4eb5813b8aac13f40fb51c1d5",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:01:33.151419Z",
+      "note": "hand-extracted 2026-08-31 (macOS-port Phase 5, per-file audit in the commit body); never installed via any script from the source repo"
+    },
+    "publish": {
+      "source": "alex-kit (house-built)",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/publish/SKILL.md",
+      "computedHash": "7225ef97292044210d70cfba576ad923ca19aeebe9d59dfd49b7994b3069e128",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:04:30.311917Z",
+      "note": "house-built 2026-08-31 (macOS-port Phase 5): no credible marketplace equivalent existed. Woken per install via the profile."
+    },
+    "review-reply": {
+      "source": "alex-kit (house-built)",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/review-reply/SKILL.md",
+      "computedHash": "dc3cadf9b3c157ce569f5b222eb30df57aab319c9e6e5bbf23cd157753881c0a",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:04:30.311917Z",
+      "note": "house-built 2026-08-31 (macOS-port Phase 5): no credible marketplace equivalent existed. Woken per install via the profile."
+    },
+    "try-workbook": {
+      "source": "alex-kit (house-built)",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/try-workbook/SKILL.md",
+      "computedHash": "433a5046f2eb26ceda99b1675956099227f0047387b732c8f92df8495efd0c4f",
+      "parked": true,
+      "parkedAt": "2026-08-31T19:04:30.311917Z",
+      "note": "house-built 2026-08-31 (macOS-port Phase 5): no credible marketplace equivalent existed. Woken per install via the profile."
+    }
+  },
+  "rebaselineNote": "N-03 fix. Recomputed over the DETERMINISTIC checkout established by .gitattributes (.agents/skills/** -text), which stops git rewriting line endings per-machine. The prior baseline was machine-dependent: a clone with core.autocrlf=true changed the bytes of files nobody edited, so S7 would have fired tamper findings at both installs on day one for pristine content. Content was verified UNCHANGED against the donor repo before rebaselining, byte-identical once CR is stripped, so this records a line-ending normalisation and not an accepted content change. From here every clone on every machine reproduces these bytes."
+}

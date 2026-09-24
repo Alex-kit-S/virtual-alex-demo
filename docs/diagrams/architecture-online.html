@@ -1,0 +1,223 @@
+<!doctype html>
+<!--
+  docs/diagrams/architecture-online.html - the source of architecture-online.png.
+  WHAT. The one diagram of docs/ARCHITECTURE-ONLINE.md: the owner's private repository as the disk,
+  the cloud session that borrows it, the hooks that save and guard, the five Routines, the walls.
+  HOW. Edit this file, then render it (1600x1140 CSS pixels at scale 2) and commit both:
+    chrome --headless --hide-scrollbars --window-size=1600,1140 --force-device-scale-factor=2
+           --virtual-time-budget=3500 --screenshot=architecture-online.png architecture-online.html
+  NEVER. Never a hex outside the ALEX palette (brand/config/color-system.md is the law), never more
+  than one Golden Orange accent (the disk), never the wordmark typed as text: the logo is a file.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Virtual Alex architecture</title>
+<style>
+  :root {
+    --ink: #001219;         /* Ink Black: the canvas */
+    --elev: #00232e;        /* elevated dark surface */
+    --teal: #005f73;        /* Dark Teal: fills only (2.62:1 on ink, under the 3:1 line floor) */
+    --cyan: #0a9396;        /* Dark Cyan: borders, arrows */
+    --aqua: #94d2bd;        /* Pearl Aqua: secondary text */
+    --custard: #e9d8a6;     /* Vanilla Custard: tertiary text, wall labels */
+    --orange: #ee9b00;      /* Golden Orange: the ONE accent, the disk */
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1600px; height: 1140px; overflow: hidden; }
+  body {
+    background:
+      linear-gradient(rgba(148, 210, 189, 0.05) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, rgba(148, 210, 189, 0.05) 1px, transparent 1px) 0 0 / 40px 40px,
+      var(--ink);
+    color: var(--white);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    position: relative;
+  }
+  .abs { position: absolute; }
+  h1 { font-size: 30px; font-weight: 600; letter-spacing: 0.2px; }
+  .sub { color: var(--aqua); font-size: 16px; margin-top: 6px; }
+  .box {
+    position: absolute; background: var(--elev); border: 2px solid var(--cyan);
+    border-radius: 10px; padding: 14px 18px;
+  }
+  .kicker {
+    font-size: 11.5px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase;
+    color: var(--custard); margin-bottom: 4px;
+  }
+  .title { font-size: 18px; font-weight: 600; }
+  .body { font-size: 13.5px; color: var(--aqua); line-height: 1.45; margin-top: 6px; }
+  code, .mono { font-family: "Segoe UI", system-ui, sans-serif; font-weight: 600; color: var(--white); }
+  .session { border-style: dashed; border-width: 2px; background: rgba(0, 35, 46, 0.85); }
+  .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+  .chip { background: var(--teal); border-radius: 8px; padding: 10px 12px; }
+  .chip .name { font-size: 14.5px; font-weight: 600; }
+  .chip .tag {
+    float: right; font-size: 10.5px; font-weight: 700; letter-spacing: 1.3px; color: var(--custard);
+    border: 1px solid var(--custard); border-radius: 4px; padding: 1px 6px; margin-top: 1px;
+  }
+  .chip .what { font-size: 13px; color: var(--aqua); margin-top: 4px; line-height: 1.4; }
+  .wall {
+    position: absolute; background: var(--elev); border: 2px solid var(--aqua); border-radius: 6px;
+    padding: 12px 14px 12px 34px; overflow: hidden;
+  }
+  .wall::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 20px;
+    background: repeating-linear-gradient(45deg, var(--aqua) 0 6px, var(--teal) 6px 12px);
+  }
+  .wall .kicker { color: var(--custard); }
+  .wall .title { font-size: 15.5px; }
+  .wall .body { font-size: 12.8px; margin-top: 4px; }
+  .gate { padding-left: 100px; }
+  .gate::before { width: 80px; }
+  .disk { border: 2px solid var(--orange); }
+  /* The disk keeps the ONE orange accent as its border. Its label stays custard like every other
+     kicker: Golden Orange fails contrast at small sizes (color-system.md: never in body text), and
+     this system has twice logged a small uppercase orange label as a brand violation. */
+  .files { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; }
+  .file { border: 1px solid var(--cyan); border-radius: 6px; padding: 8px 10px; }
+  .file .n { font-size: 13.5px; font-weight: 600; }
+  .file .d { font-size: 12px; color: var(--aqua); margin-top: 2px; }
+  table.r { border-collapse: collapse; margin-top: 8px; width: 100%; }
+  table.r td { font-size: 13px; padding: 3px 0; color: var(--aqua); }
+  table.r td:first-child { color: var(--white); font-weight: 600; }
+  table.r td:last-child { text-align: right; color: var(--custard); }
+  .lbl {
+    position: absolute; font-size: 12.5px; color: var(--aqua); background: var(--ink);
+    padding: 2px 6px; border-radius: 4px; line-height: 1.35;
+  }
+  svg.wires { position: absolute; left: 0; top: 0; }
+  .foot { position: absolute; bottom: 22px; font-size: 12px; color: var(--custard); }
+</style>
+</head>
+<body>
+
+<div class="abs" style="left:60px; top:36px;">
+  <h1>How Virtual Alex works</h1>
+  <div class="sub">Nothing is installed. A cloud session borrows the repository, does the work, saves every file back, and is thrown away.</div>
+</div>
+
+<!-- row 1: what starts a session -->
+<div class="box" style="left:60px; top:150px; width:360px; height:200px;">
+  <div class="kicker">Starts a session</div>
+  <div class="title">You</div>
+  <div class="body">The Claude app or <span class="mono">claude.ai/code</span>. You open a session on your repository and talk to Alex. Your own sessions run in <span class="mono">Default</span>, where the lane guard stays off.</div>
+</div>
+
+<div class="box" style="left:450px; top:150px; width:390px; height:200px;">
+  <div class="kicker">Starts a session on a schedule</div>
+  <div class="title">Five Routines</div>
+  <table class="r">
+    <tr><td>alex-snapshot</td><td>Sun 04:15</td><td>Routine</td></tr>
+    <tr><td>alex-housekeeping</td><td>Sun 04:45</td><td>Routine</td></tr>
+    <tr><td>alex-triage</td><td>daily 05:00</td><td>Armed</td></tr>
+    <tr><td>alex-brief</td><td>weekdays 06:15</td><td>Armed</td></tr>
+    <tr><td>alex-radar</td><td>Sun 23:30</td><td>Routine</td></tr>
+  </table>
+</div>
+
+<div class="box" style="left:1215px; top:150px; width:325px; height:200px;">
+  <div class="kicker">Where improvements come from</div>
+  <div class="title">The template</div>
+  <div class="body">Named in <span class="mono">system/template-source.json</span>. Nothing arrives on its own. <span class="mono">/update</span> checks its tests passed, shows every change, then waits for your yes.</div>
+</div>
+
+<!-- row 2: the session -->
+<div class="box session" style="left:60px; top:400px; width:840px; height:320px;">
+  <div class="kicker">A fresh Anthropic machine, thrown away when the session ends</div>
+  <div class="title">Cloud session</div>
+  <div class="body">Claude reads <span class="mono">CLAUDE.md</span>, the commands and the skills from the clone. That is Alex. The hooks that guard it and save its work:</div>
+  <div class="chips">
+    <div class="chip"><span class="tag">GUARDS</span><div class="name">SessionStart</div><div class="what">Checks the branch, turns the commit gate on, loads the identity card.</div></div>
+    <div class="chip"><span class="tag">GUARDS</span><div class="name">PreToolUse</div><div class="what">Runs the lane guard before each tool, in Routine and Armed sessions.</div></div>
+    <div class="chip"><span class="tag">SAVES</span><div class="name">PostToolUse</div><div class="what">Autosave: every Write or Edit is committed and pushed within seconds.</div></div>
+    <div class="chip"><span class="tag">SAVES</span><div class="name">Stop</div><div class="what">One last autosave before the session ends.</div></div>
+  </div>
+</div>
+
+<!-- the side walls -->
+<div class="wall" style="left:925px; top:400px; width:260px; height:150px;">
+  <div class="kicker">Wall</div>
+  <div class="title">The deny list</div>
+  <div class="body">No send, reply, forward, share or delete. No calendar writes. No edits to settings, commands, hooks or workflows.</div>
+</div>
+<div class="wall" style="left:925px; top:570px; width:260px; height:150px;">
+  <div class="kicker">Wall</div>
+  <div class="title">The lane guard</div>
+  <div class="body">Armed: no web at all. Routine and Armed: no <span class="mono">gh</span>, no remote git, no identity writes.</div>
+</div>
+
+<!-- the outside -->
+<div class="box" style="left:1215px; top:400px; width:325px; height:150px;">
+  <div class="kicker">Outside</div>
+  <div class="title">Gmail and Calendar</div>
+  <div class="body">Connectors on your Claude account. Alex reads, and drafts replies. Alex never sends.</div>
+</div>
+<div class="box" style="left:1215px; top:570px; width:325px; height:150px;">
+  <div class="kicker">Outside</div>
+  <div class="title">The web</div>
+  <div class="body">WebFetch and WebSearch, behind Anthropic's Trusted network list. Radar reads public feeds here.</div>
+</div>
+
+<!-- the commit gate -->
+<div class="wall gate" style="left:300px; top:760px; width:600px; height:80px; padding-top:10px;">
+  <div class="title">The commit gate, on every save <span style="color:var(--custard); font-weight:400; font-size:12.8px;">&nbsp;<span class="mono" style="color:var(--custard)">scripts/hooks/pre-commit</span></span></div>
+  <div class="body" style="margin-top:2px;">Secret scan, 10 MB size guard, employer-data guard, validate-alex. A refused save is shown to Alex.</div>
+</div>
+
+<!-- row 4: the disk -->
+<div class="box disk" style="left:60px; top:880px; width:840px; height:170px;">
+  <div class="kicker">The disk</div>
+  <div class="title">Your private GitHub repository</div>
+  <div class="files">
+    <div class="file"><div class="n">soul.md</div><div class="d">your identity</div></div>
+    <div class="file"><div class="n">vault/</div><div class="d">your notes</div></div>
+    <div class="file"><div class="n">starter/</div><div class="d">your seed</div></div>
+    <div class="file"><div class="n">scheduler/routines/</div><div class="d">the Routine orders</div></div>
+    <div class="file"><div class="n">system/run-log.jsonl</div><div class="d">one row per run</div></div>
+  </div>
+</div>
+
+<div class="box" style="left:1215px; top:880px; width:325px; height:78px; padding-top:10px;">
+  <div class="title" style="font-size:16px;">virtual-alex-backup</div>
+  <div class="body" style="margin-top:3px;">A second private repository. A snapshot branch every Sunday.</div>
+</div>
+<div class="box" style="left:1215px; top:972px; width:325px; height:78px; padding-top:10px;">
+  <div class="title" style="font-size:16px;">Heartbeat, on GitHub</div>
+  <div class="body" style="margin-top:3px;">Emails you if no Routine has written for 48 hours.</div>
+</div>
+
+<!-- wires -->
+<svg class="wires" width="1600" height="1140" viewBox="0 0 1600 1140" aria-hidden="true">
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0a9396"/>
+    </marker>
+  </defs>
+  <g stroke="#0a9396" stroke-width="2.2" fill="none" marker-end="url(#head)">
+    <path d="M240,351 L240,396"/>
+    <path d="M645,351 L645,396"/>
+    <path d="M1215,260 L870,260 L870,396"/>
+    <path d="M180,879 L180,724"/>
+    <path d="M340,721 L340,876"/>
+    <path d="M1185,475 L1212,475"/>
+    <path d="M1185,645 L1212,645"/>
+    <path d="M900,475 L922,475"/>
+    <path d="M900,645 L922,645"/>
+    <path d="M901,918 L1211,918"/>
+    <path d="M1214,1012 L904,1012"/>
+  </g>
+</svg>
+
+<div class="lbl" style="left:192px; top:772px; width:98px;">cloned at the start</div>
+<div class="lbl" style="left:350px; top:728px;">every save, pushed</div>
+<div class="lbl" style="left:990px; top:898px;">weekly snapshot</div>
+<div class="lbl" style="left:975px; top:992px;">reads the run log daily</div>
+<div class="lbl" style="left:960px; top:240px;">/update, after your yes</div>
+
+<img class="abs" src="../../brand/images/alex-logo-transparent.png" alt="ALEX" style="left:60px; bottom:14px; height:44px;">
+<div class="foot" style="right:60px;">Source: docs/diagrams/architecture-online.html</div>
+
+</body>
+</html>

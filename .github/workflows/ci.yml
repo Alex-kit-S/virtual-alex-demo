@@ -1,0 +1,120 @@
+# Virtual Alex CI: the Kit's portable tests on the one platform a cloud session runs on, Ubuntu.
+# Generated into the template by scripts/build-online-template.mjs from variants/online/.github/;
+# the Kit's own workflow keeps its Windows and macOS jobs, which run PowerShell and launcher checks
+# that do not exist in this tree (the .ps1 files and the launchers are drop rows in kit-manifest.json).
+# The step list is otherwise the Kit's: scripts/tests/test-ci-parity.mjs fails in the Kit when a step
+# runs in one list and not another without a named reason, so a test written for this tree runs here.
+# The donor-identity scan is not a step here, on purpose: its patterns are the Kit author's identity,
+# so it is not in this tree at all. scripts/build-online-template.mjs runs it over every generated tree
+# before that tree is pushed (row donor-scrub in system/kit-manifest.json).
+#
+# WHY THE JOB IS GATED ON is_template. An owner's repo autosaves on every file write (a PostToolUse
+# hook commits and pushes main), so a workflow that ran on every push would spend the owner's free
+# Actions minutes dozens of times a day and mail them a result each time. The tests prove the
+# TEMPLATE; they run where the repository is a GitHub template (the template itself and every seed)
+# and on demand (workflow_dispatch), never in a template-born owner repo, where the daily heartbeat
+# is the one workflow that should fire. Until 2026-09-24 the gate was the org name, a proxy for
+# "template or seed" that broke with the first owner repo inside the org (the demo), whose vault
+# failed the template's manifest test. scripts/tests/test-ci-parity.mjs leg G evaluates the gate.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-tests:
+    if: ${{ github.event.repository.is_template || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Lesson parser (Recall Spine)
+        run: node scripts/tests/test-lesson-parse.js
+      - name: Protected-file guard (validate-alex V10 core)
+        run: node scripts/tests/test-protected-guard.js
+      - name: Untrusted-lane egress guard (injection wall)
+        run: node scripts/tests/test-untrusted-guard.js
+      - name: Soul-core floor and privacy (a young corpus builds; only-the-card-unignored still refuses)
+        run: node scripts/tests/test-soul-core-floor.mjs
+      - name: Vault-search freshness gate (sandboxed index)
+        run: python scripts/tests/test_vault_search_freshness.py
+      - name: Skill link layer (park/wake round-trip + sabotage, POSIX leg)
+        run: node scripts/tests/test-skills-park.mjs
+      - name: Skill link targets (relative target, and a moved tree keeps working links - the POSIX leg)
+        run: node scripts/tests/test-skill-links.mjs
+      - name: Install-state record (one writer, one schema; the legacy key set shown refused first)
+        run: node scripts/tests/test-install-state.mjs
+      - name: Migration 001 already-present (the /setup short variant shown duplicated first)
+        run: node scripts/tests/test-migration-001.mjs
+      - name: Generator on a checkout with no soul.md (the ENOENT exit shown failing first)
+        run: node scripts/tests/test-generate-no-soul.mjs
+      - name: Generator command line (an unknown flag is refused before anything loads; --help is read-only)
+        run: node scripts/tests/test-generate-cli.mjs
+      - name: validate-alex V2 on a platform with no local scheduler (the hard FAIL on Linux shown first)
+        run: node scripts/tests/test-validate-v2-platform.mjs
+      - name: Skill-state resolver (profile layer + MANDATORY floor)
+        run: node scripts/tests/test-skill-state.mjs
+      - name: launchd generator guard rails (refusals, plist shape, catchup)
+        run: node scripts/tests/test-gen-launchd.mjs
+      - name: Scheduler platform dispatch (darwin -> launchd, never schtasks)
+        run: node scripts/tests/test-scheduler-dispatch.mjs
+      - name: Radar feed resolver (per-install only, template ships none)
+        run: node scripts/tests/test-radar-feeds.mjs
+      - name: Doctor honesty (no PASS for an absent tool)
+        run: node scripts/tests/test-doctor-honesty.mjs
+      - name: JSON writer (the standard's enforcement mechanism)
+        run: node scripts/tests/test-json-writer.js
+      - name: JSON standard audit and validate-alex V21 (every refusal shown before the pass)
+        run: node scripts/tests/test-json-standard.mjs
+      - name: Install profile one writer (the enforced example, a legacy profile losing nothing, the refusal shown)
+        run: node scripts/tests/test-install-profile.mjs
+      - name: Migrations ledger through the JSON standard (the legacy ledger shown unhealed first)
+        run: node scripts/tests/test-run-migrations-ledger.mjs
+      - name: JSON standard ratchet (every enforced file conforms and no writer goes around the helper)
+        run: node scripts/json-standard-audit.js --enforced
+      - name: CI list parity (a step in one list and not another needs a named reason)
+        run: node scripts/tests/test-ci-parity.mjs
+      - name: Template generator guards (row without online, unclaimed path, empty flagged list)
+        run: node scripts/tests/test-build-online-template.mjs
+      - name: Template changelog (CHANGELOG.md is the render of the jsonl; a lagging row and a hand edit shown failing first)
+        run: node scripts/tests/test-changelog.mjs
+      - name: Virtual Alex autosave and run log (every guard shown refusing before the pass)
+        run: node scripts/tests/test-autosave.mjs
+      - name: Secret scanner and the size guard (every refusal shown before the pass)
+        run: node scripts/tests/test-secret-scan.mjs
+      - name: Employer-data guard and the Virtual Alex commit gate (every refusal shown before the pass)
+        run: node scripts/tests/test-employer-data-guard.mjs
+      - name: Email triage machine block (a typo in a rule is a rule that silently does nothing; every refusal shown)
+        run: node scripts/tests/test-triage-rules.mjs
+      - name: Memory import for /setup --import (zip-slip, links, size, content legs, overwrite; every refusal shown before the pass)
+        run: node scripts/tests/test-import-memory.mjs
+      - name: validate-alex under CLAUDE_CODE_REMOTE (drift warns, content blocks, generator never degrades)
+        run: node scripts/tests/test-validate-remote.mjs
+      - name: validate-alex V19 (Routine prompt files bound to routines[]; every refusal shown before the pass)
+        run: node scripts/tests/test-validate-routines.mjs
+      - name: validate-alex V13 on a tree whose wrappers are drop rows (skip by the row, never by the absence)
+        run: node scripts/tests/test-validate-v13-drop.mjs
+      - name: validate-alex V9 (first-fire aging is silent on a day-one install; the old rule shown failing)
+        run: node scripts/tests/test-validate-v9.mjs
+      - name: validate-alex V18 (a command resolves against both command trees; an unknown one still fails)
+        run: node scripts/tests/test-validate-v18-commands.mjs
+      - name: Virtual Alex sweep check.mjs (thirteen legs; every RED and AMBER shown before the pass)
+        run: node scripts/tests/test-check-mjs.mjs
+      - name: Heartbeat check (48-hour run-log rule; absent and stale shown failing before the pass)
+        run: node scripts/tests/test-heartbeat-check.mjs
+      - name: /update template gate (a missing source, a red or unread head shown refused before the pass)
+        run: node scripts/tests/test-template-gate.mjs
+      - name: Portability probes (P1-P5)
+        run: node scripts/tests/portability-check.mjs

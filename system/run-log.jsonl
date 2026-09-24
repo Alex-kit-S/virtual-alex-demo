@@ -1,0 +1,6 @@
+{"at":"2026-09-24T06:41:51Z","canary":null,"job":"sweep","missed":null,"model":null,"reason":"11 green, 2 amber, 0 red; R1: system/run-log.jsonl does not exist yet: no Routine has written a row (expected before the first Run now)","session_url":null,"status":"PARTIAL"}
+{"at":"2026-09-24T06:41:57Z","canary":null,"job":"session","missed":null,"model":null,"reason":null,"session_url":null,"status":"COMPLETE"}
+{"at":"2026-09-24T06:48:25Z","canary":null,"job":"sweep","missed":null,"model":null,"reason":"11 green, 2 amber, 0 red; R1: 5 Routine(s) past cadence: snapshot never ran; housekeeping never ran; triage never ran; brief never ran; radar never ran","session_url":null,"status":"PARTIAL"}
+{"at":"2026-09-24T06:48:31Z","canary":null,"job":"session","missed":null,"model":null,"reason":null,"session_url":null,"status":"COMPLETE"}
+{"at":"2026-09-24T07:01:52Z","canary":null,"job":"sweep","missed":null,"model":null,"reason":"11 green, 2 amber, 0 red; R1: 5 Routine(s) past cadence: snapshot never ran; housekeeping never ran; triage never ran; brief never ran; radar never ran","session_url":null,"status":"PARTIAL"}
+{"at":"2026-09-24T07:01:57Z","canary":null,"job":"session","missed":null,"model":null,"reason":null,"session_url":null,"status":"COMPLETE"}

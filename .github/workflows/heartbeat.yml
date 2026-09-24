@@ -1,0 +1,55 @@
+# Virtual Alex heartbeat: the one workflow that fires on its own in an owner's repository.
+# Generated into the template by scripts/build-online-template.mjs from variants/online/.github/.
+#
+# WHY. Every Routine writes a row to system/run-log.jsonl, and the brief opens with the ones that
+# failed. What no Routine can report is the silent-stop class: every Routine switched off after 72
+# hours without GitHub, a paused subscription, a daily cap that binds every night. Nothing runs, so
+# nothing writes. This job runs on GitHub's side of that boundary once a day and FAILS when the
+# newest row is older than 48 hours or the file is absent, so GitHub mails the owner about a
+# failed workflow. Zero tokens, the free Actions minutes of a private repository.
+#
+# WHY THE SCHEDULE SKIPS ON A TEMPLATE (review finding 2, 2026-09-23). The template and every seed
+# carry no run log by construction, so a daily fire there fails every day, for ever, and mails the
+# maintainer a failure each morning. That trains the reader to ignore the one email this job exists
+# to send. So the scheduled fire skips the check where the repository is a GitHub template; a manual
+# workflow_dispatch still runs anywhere, and on the template it fails, which is the proof the check
+# fires. The schedule trigger's first real fire is a first-day test.
+#
+# WHY A GATE STEP AND NOT A JOB if: (2026-09-24, fleet Fix A, review finding F28). The gate used to be
+# the org name, which lets a template outside Alex-kit-S/ (a public one) fail every day. The flag to
+# gate on is is_template, but a schedule event carries no webhook payload (GitHub's events reference:
+# "Webhook event payload: Not applicable"), so github.event.repository does not exist on the one fire
+# that needs it. The first step asks the API, on a schedule fire only; the check runs unless the answer
+# is exactly "true", and a failed read fails the job, so the alarm can never go quiet by accident.
+name: Heartbeat
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Is this repository a template? (a schedule fire carries no repository object)
+        id: gate
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          template="$(gh api "repos/${GITHUB_REPOSITORY}" --jq .is_template)"
+          echo "template=${template}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        if: ${{ steps.gate.outputs.template != 'true' }}
+      - uses: actions/setup-node@v5
+        if: ${{ steps.gate.outputs.template != 'true' }}
+        with:
+          node-version: 22
+      - name: The newest run-log row is younger than 48 hours
+        if: ${{ steps.gate.outputs.template != 'true' }}
+        run: node scripts/heartbeat-check.mjs
