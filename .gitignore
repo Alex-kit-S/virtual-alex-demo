@@ -36,8 +36,10 @@ work/07-email-triage/state/staged-drafts.json
 # Vault-search FTS5 index: derived from vault/**/*.md, rebuilt on the first search of a session.
 scripts/vault-index/
 
-# Recall Spine data: SQLite never enters git (a WAL-mode file without its journal is a torn snapshot) and
-# the per-prompt telemetry has no reproducible value. The code under system/recall/ ships.
+# Recall Spine data. The organ is a laptop one: only system/recall/README.md and lib/lessons.js ship here,
+# the rest is a drop row (laptop-only) in the Kit manifest, so nothing in this tree writes these files.
+# The patterns stay as a guard: SQLite never enters git (a WAL-mode file without its journal is a torn
+# snapshot) and the per-prompt telemetry has no reproducible value.
 system/recall/*.db
 system/recall/*.db-wal
 system/recall/*.db-shm

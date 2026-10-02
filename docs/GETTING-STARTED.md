@@ -1,4 +1,4 @@
-<!-- GENERATED FILE - do not hand-edit. Source: templates/getting-started.template.md + system/manifest.json + scheduler/schedule.md + CLAUDE.md. Regenerate: node scripts/generate-alex.js. Generated 2026-09-24. -->
+<!-- GENERATED FILE - do not hand-edit. Source: templates/getting-started.template.md + system/manifest.json + scheduler/schedule.md + CLAUDE.md. Regenerate: node scripts/generate-alex.js. Generated 2026-09-26. -->
 
 # Getting Started
 
@@ -130,8 +130,11 @@ night, and two people who never type it by hand would end up with a system that 
 Monthly rather than weekly for the same reason in the other direction: a weekly reasoning run spends
 allowance you want for real work.
 
-- **How a scheduled job works:** the scheduler fires, runs `claude -p "Run /{command}"`, the work
-  happens, the process exits. Each run is a fresh session.
+- **How a scheduled job works:** the scheduler fires, runs `claude -p "/{command} ..."`, the work
+  happens, the process exits. Each run is a fresh session. The prompt STARTS with the slash command,
+  so Claude Code loads that command's file before the model reads anything; a prompt that opens with
+  another word ("Run /{command}") leaves the model to choose a skill by name, and a look-alike can
+  win. A full stop glued to the name (`/{command}.`) also stops the command loading.
 - **The jobs are hardened, not naive one-shots.** The wrappers detect failure, write GREEN or RED to
   `system/run-status.json`, raise a desktop notification on RED, and self-schedule a retry.
   Neither scheduler's own restart setting covers a run that fails cleanly, so it is not the retry.

@@ -15,7 +15,7 @@ node scripts/lib/cli-version.js --show
 The first says which template build this copy carries, how old that build is, and when this copy
 took it. No Routine can see the template, so this is how the owner sees the age of their Alex;
 whether a newer build exists is `/update`'s answer, never this command's. The second names the
-Claude Code version: below 2.1.227 a save the commit gate refuses is NOT reported to Alex, so when
+Claude Code version: below 2.1.227, or when it could not be read, whether a save the commit gate refuses reaches Alex has not been measured, so when
 it prints `---CLI-OLD---` or `---CLI-UNKNOWN---`, also print the newest line of
 `outputs/logs/autosave.log` that contains `REFUSED` (or "no refused save in the log"), because that
 log is the one place a refusal is written whatever the version.

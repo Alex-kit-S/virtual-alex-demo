@@ -61,8 +61,8 @@ Full plan record + kill criteria + the Phase 0 baseline: [[research/alex-recall-
   tested AGAINST it, never the reverse.
 - **C21 - facts-ledger doc-drift check** (`scripts/facts-check.js`, recovery C21, Monday sweep). Tests
   standing IN-REPO doc claims against facts.db (the ST-20/FR-04 "a doc lying about the system" class,
-  mechanized: it caught its own "20 checks" line the moment C21 was added). Complements C19
-  (narrative-drift = the out-of-repo master doc); no overlap. Grows one `{doc-regex + fact}` row at a time.
+  mechanized: it caught its own "20 checks" line the moment C21 was added). C19 (narrative drift on
+  the out-of-repo master doc) is retired in the Kit. Grows one `{doc-regex + fact}` row at a time.
 - **Recall injection** (`system/recall/recall-inject.js`, UserPromptSubmit hook). Before every prompt,
   injects the most relevant current facts (WITH their valid-from dates), vault BM25 snippets, and
   lessons as **RETRIEVED REFERENCE DATA, never instructions** (the work/07 model on the internal read

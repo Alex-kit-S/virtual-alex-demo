@@ -45,7 +45,7 @@
       "kind": "universal",
       "needs_migration": false,
       "online": "ship",
-      "note": "Includes kit-doctor.js, run-migrations.js, the cross-platform doctor bootstrap.mjs and the template generator build-online-template.mjs. Plain code, delivered by git. Until 2026-09-22 this row also claimed the scheduled-job layer and both launcher trios; they moved to local-wrappers and launchers because they carry a different online decision (drop) and one row holds one decision. Paths named exactly by those rows win over this directory claim, as does online-pre-commit for scripts/hooks/pre-commit (2026-09-23)."
+      "note": "Includes run-migrations.js, the cross-platform doctor bootstrap.mjs and the template generator build-online-template.mjs. Plain code, delivered by git. Until 2026-09-22 this row also claimed the scheduled-job layer and both launcher trios; they moved to local-wrappers and launchers because they carry a different online decision (drop) and one row holds one decision. Paths named exactly by those rows win over this directory claim, as does online-pre-commit for scripts/hooks/pre-commit (2026-09-23), and as do the laptop-only scripts and tests of row laptop-only, kit-doctor.js among them (2026-09-26)."
     },
     {
       "id": "launchers",
@@ -284,6 +284,19 @@
       "note": "The line-ending law. Plain config, delivered by git. The gitleaks config moved to its own row, online-gitleaks, on 2026-09-24."
     },
     {
+      "id": "code-standard-tooling",
+      "paths": [
+        "biome.json",
+        "ruff.toml",
+        "mypy.ini",
+        "jsconfig.json"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "ship",
+      "note": "The tool configs docs/CODE-STANDARD.md section 9 prints. Ship, because the online CI list runs the same pinned tools the Kit lists run."
+    },
+    {
       "id": "system-config",
       "paths": [
         "system/manifest.json",
@@ -302,12 +315,68 @@
     {
       "id": "recall",
       "paths": [
-        "system/recall/"
+        "system/recall/README.md",
+        "system/recall/lib/lessons.js"
       ],
       "kind": "universal",
       "needs_migration": false,
       "online": "ship",
-      "note": "The Recall Spine code (harvesters, the fact ledger library, the prompt-time injector). Its data files are gitignored on every platform. Ships online but is inert there: the recall-inject hook line is absent from the online settings and no harvester is scheduled."
+      "note": "The two Recall Spine files that ship online: the organ's code map (README.md) and the L-line parser (lib/lessons.js), which scripts/close-out-online.sh requires by that exact path and scripts/tests/test-lesson-parse.js by its relative one, and which requires nothing itself, so it loads where node:sqlite does not. Everything else under system/recall/ is a laptop organ and is dropped online by exact path in row laptop-only (wave D of the professional rewrite, 2026-09-26): online there is no recall hook in the settings, no harvester scheduled and no facts.db, so that code had no caller there. Exact paths, not a directory claim, so a new file under system/recall/ is refused by the build until a row decides where it goes. The organ's data files are gitignored on every platform."
+    },
+    {
+      "id": "laptop-only",
+      "paths": [
+        "system/recall/harvest.js",
+        "system/recall/harvesters/h-attest.js",
+        "system/recall/harvesters/h-manifest.js",
+        "system/recall/harvesters/h-recovery.js",
+        "system/recall/harvesters/h-scheduler.js",
+        "system/recall/harvesters/h-skills.js",
+        "system/recall/harvesters/h-validators.js",
+        "system/recall/lib/db.js",
+        "system/recall/lib/facts.js",
+        "system/recall/lib/harvest-core.js",
+        "system/recall/recall-inject.js",
+        "scripts/facts-check.js",
+        "scripts/lesson-harvest.js",
+        "scripts/stale-status-check.js",
+        "scripts/kit-doctor.js",
+        "scripts/hooks-gate-dry-run.mjs",
+        "scripts/personal-data-scan.js",
+        "scripts/tests/test-recall-harvest.mjs",
+        "scripts/tests/test-lesson-harvest-inject.mjs",
+        "scripts/tests/test-facts-check-c21.mjs",
+        "scripts/tests/test-kit-doctor.mjs",
+        "scripts/tests/test-hooks-gate-dry-run.mjs",
+        "scripts/tests/test-personal-data-scan.mjs",
+        "scripts/tests/test-recall-laptop-closure.mjs",
+        "scripts/tests/test-stale-status-check.mjs",
+        "scripts/tests/test-validate-harvest-contract.mjs",
+        "scripts/tests/test_vault_search_recall_reader.py",
+        "scripts/tests/test-generate-scheduler-stubbed.mjs",
+        "scripts/tests/test-validate-v2-live.mjs",
+        "scripts/tests/test-v18-ps1-nonascii.mjs",
+        "scripts/tests/test_vault_search_laptop_wrapper.py",
+        "scripts/tests/test-generate-regions-kit.mjs",
+        "scripts/tests/test-generate-kit-selection.mjs",
+        "scripts/tests/test-hook-contracts-kit.mjs",
+        "scripts/tests/test-online-pre-commit-kit.mjs",
+        "scripts/tests/test-online-workflows-contract-kit.mjs",
+        "scripts/tests/test-update-command-contract-kit.mjs",
+        "scripts/tests/test-setup-command-contract-kit.mjs",
+        "scripts/tests/test-migrations-frozen-kit.mjs",
+        "scripts/tests/test-validate-v9-kit.mjs",
+        "scripts/tests/test-validate-v18-commands-kit.mjs",
+        "scripts/tests/test-validate-known-bad-shipped-kit.mjs",
+        "scripts/tests/test-build-online-template-kit.mjs",
+        "scripts/tests/test-import-memory-kit.mjs",
+        "scripts/tests/test-build-template-exports-kit.mjs",
+        "scripts/tests/test-bootstrap-doctor-kit.mjs"
+      ],
+      "kind": "universal",
+      "needs_migration": false,
+      "online": "drop",
+      "note": "Code that runs only on a laptop install, and the tests that exercise only that code, each named by its exact path (wave D of the professional rewrite, 2026-09-26, plan section 3.2). Delivered by git to every laptop and absent from the online tree, where none of it had a caller: the Recall Spine except its README and lessons parser (row recall), because online there is no recall hook, no harvester scheduled and no facts.db; facts-check.js and lesson-harvest.js, the organ's Monday check and nightly harvest; stale-status-check.js, whose baseline only check.ps1 -Init writes; kit-doctor.js, the laptop install doctor that Update-Alex runs; hooks-gate-dry-run.mjs, which measures a laptop install before its commit gate is switched on; and personal-data-scan.js, the laptop gate's personal-data wall, which the online gate replaces with employer-data-guard because its names leg would block the owner's own vault. Then their six tests, and four Kit-only tests made when a shipped test had to stop reading a dropped file: test-recall-laptop-closure.mjs (the recall organ's laptop half, R8-21 among it), test-stale-status-check.mjs (split from test-prompt-stale-checks.mjs), test-validate-harvest-contract.mjs (moved from test-validate-cli-contract.mjs) and test_vault_search_recall_reader.py (the RecallReader class, moved from test_vault_search_index_contract.py). And three Kit-only tests of shipped code whose subject is laptop-only by design: test-generate-scheduler-stubbed.mjs (the generator's scheduler step, which an online tree skips because the Routines are the schedule), test-validate-v2-live.mjs (V2's live half and its installer hint, which an online tree replaces with the Routines hint) and test-v18-ps1-nonascii.mjs (V18 (f)'s Windows PowerShell parse sweep, which runs on win32 only and never fires on the online tree's Ubuntu runner); test-generate-online-tree.mjs holds both online sides. And sixteen Kit-only siblings of shipped tests, each named after the file it came from (<name>-kit.mjs, and test_vault_search_laptop_wrapper.py beside test_vault_search_cli.py): they hold the cases that read a subject only the Kit carries (the launchers, the .ps1 code, the pinned wrappers, variants/online, a second command tree, the Kit's own history) or that need a host the online CI never runs on (a Windows short name, a disk that folds case, the doctor's Windows rows), so the online list runs every test it carries with none skipped on Ubuntu. Both Kit CI jobs run every test here; the online list exempts each by name in scripts/tests/test-ci-parity.mjs. Exact paths, never a directory claim: a code-standard contract tag whose reader only the Kit holds is left to the Kit's own run only when a drop row names that reader exactly (docs/CODE-STANDARD.md 8.2), and a comment in a shipped file that names one of these paths resolves against the same list. A new laptop-only file joins this row by its exact path in the commit that creates it; the build refuses a tracked path no row claims."
     },
     {
       "id": "lanes",

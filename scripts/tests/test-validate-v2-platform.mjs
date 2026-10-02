@@ -1,64 +1,77 @@
 #!/usr/bin/env node
 // scripts/tests/test-validate-v2-platform.mjs - V2's live half on a platform with no local scheduler.
-// (2026-09-23, Virtual Alex fleet seat 3.)
 //
-// WHY, THE DEFECT. This Kit has two scheduler backends, Windows Task Scheduler and macOS launchd. On any
-// other platform gen-scheduler's liveJobs() throws "no scheduler backend", by design, and its own
-// run() logs the scheduler step as SKIPPED. But validate-alex V2 turned that throw into a hard
-// FAILED in the generator context, so `node scripts/generate-alex.js` failed at step 3 on EVERY
-// Linux run. Linux is where every online owner lives (the Claude Code cloud VM), and /new, /setup
-// and /update all tell the model to run the generator. Found when the online CI list first ran
-// test-generate-no-soul.mjs on Ubuntu (template CI run 35924782216, G1 exit 1).
+// WHAT. Proves validate-alex's V2 (the live-scheduler check) treats "no backend on this platform" as a
+// stated WARNING, never a hard FAILED, while a supported backend whose query genuinely cannot run still
+// fails. Deleted, this file would let a `generate-alex.js` run on Linux (every online owner's Claude Code
+// cloud VM) FAIL at step 3 for a condition that was never a fault.
 //
-// WHAT. No backend on this platform = nothing to compare = a stated WARNING, because the
-// scheduler step skips on the same condition. A backend that EXISTS but whose query fails is still
-// a hard FAILED in the generator context: that is a real fault on a machine that should have jobs.
+// WHY. This Kit has two scheduler backends, Windows Task Scheduler and macOS launchd. On any other
+// platform gen-scheduler's liveJobs() throws "no scheduler backend", by design, and its own run() logs
+// the scheduler step as SKIPPED. A validator that turned that throw into a hard FAILED in the generator
+// context would fail `node scripts/generate-alex.js` at step 3 on every Linux run - every online owner's
+// Claude Code cloud VM.
 //
 //   P1  NEGATIVE on a platform with no backend (linux), V2 does not FAIL the generator context
 //   P2  and it says so: a WARNING V2 SKIPPED line naming the platform
-//   P3  NEGATIVE a supported platform whose query cannot run still FAILS V2 (checked off-darwin by
-//       claiming darwin where launchctl is absent; on a real Mac the query works, so it is skipped)
+//   P3  NEGATIVE a supported platform whose query cannot run still FAILS V2 (staged with
+//       C4_LAUNCHCTL_THROW, which the fixture answers the same way on every host, real darwin included)
 //
-// HOW. Runs the real validator's runAll() in a child node with process.platform overridden, and
-// reads only V2 lines.
-//   node scripts/tests/test-validate-v2-platform.mjs      (exit 0 = all pass)
+// HOW. Runs the real validator's runAll() in a child node with process.platform overridden, and reads
+// only V2 lines. linux never reaches a real scheduler binary at all (no backend = no call). darwin's
+// launchctl is answered by the shared scheduler-stub fixture with C4_LAUNCHCTL_THROW set, so the "query
+// cannot run" case is a controlled refusal inside the fixture rather than a real absent binary or a fall
+// through to whatever blocker NODE_OPTIONS may have loaded ahead of it (which would otherwise log a
+// scheduler refusal of its own for a case this file MEANS to exercise).
 //
-// NEVER. Nothing in the checkout is touched.
+// NEVER. Touches anything in the checkout, or a real scheduler binary.
+//
+// Usage: node scripts/tests/test-validate-v2-platform.mjs
+// Exit: 0 all pass - 1 a failure
 
+import { test, describe } from 'node:test';
+import assert from 'node:assert/strict';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const SCHED_STUB = path.join(KIT, 'scripts', 'tests', 'fixtures', 'scheduler-stub.cjs');
 
-let failures = 0;
-const ok = (cond, name, detail = '') => {
-  console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${detail ? ` - ${detail}` : ''}`);
-  if (!cond) failures++;
-};
-
-function v2Lines(platform) {
-  const js = `Object.defineProperty(process, 'platform', { value: ${JSON.stringify(platform)} });
-    const v = require(${JSON.stringify(path.join(KIT, 'scripts', 'validate-alex.js'))});
+function v2Lines(platform, env = {}) {
+  // Platform is pinned by the scheduler-stub fixture itself, from C4_PLATFORM: not redefined here too,
+  // since process.platform is not configurable a second time in the same process.
+  const js = `const v = require(${JSON.stringify(path.join(KIT, 'scripts', 'validate-alex.js'))});
     v.runAll({ context: 'generator' }).then(() => {}, (e) => { console.error('internal: ' + e.message); });`;
-  const r = spawnSync(process.execPath, ['-e', js], { cwd: KIT, encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_REMOTE: '' } });
-  return `${r.stdout || ''}\n${r.stderr || ''}`.split(/\r?\n/).filter((l) => /^(FAILED|WARNING)[^:]*V2\b/.test(l) || /^internal:/.test(l));
+  const r = spawnSync(process.execPath, ['-r', SCHED_STUB, '-e', js], {
+    cwd: KIT,
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CODE_REMOTE: '', C4_PLATFORM: platform, ...env }
+  });
+  return `${r.stdout || ''}\n${r.stderr || ''}`
+    .split(/\r?\n/)
+    .filter((l) => /^(FAILED|WARNING)[^:]*V2\b/.test(l) || /^internal:/.test(l));
 }
 
-{
-  const lines = v2Lines('linux');
-  const failed = lines.filter((l) => /^FAILED V2: .*query unavailable/.test(l));
-  ok(failed.length === 0, 'P1 NEGATIVE with no scheduler backend (linux), V2 does not FAIL the generator context', failed.join(' | ') || 'no FAILED V2 live-half line');
-  ok(lines.some((l) => /^WARNING V2 SKIPPED \(live half\): .*platform=linux/.test(l)), 'P2 it states the skip and names the platform',
-    lines.find((l) => /SKIPPED/.test(l)) || '(no SKIPPED line)');
-}
-if (process.platform === 'darwin') {
-  console.log('SKIP  P3 - this runner IS darwin, where launchctl works, so a failing launchd query cannot be staged here');
-} else {
-  const lines = v2Lines('darwin');
-  ok(lines.some((l) => /^FAILED V2: V2 \(live half\): launchd query unavailable/.test(l)),
-    'P3 NEGATIVE a supported backend whose query cannot run still FAILS V2', lines.find((l) => /^FAILED V2/.test(l)) || lines.join(' | ') || '(no V2 line)');
-}
+describe('validate-alex V2, the live half, staged across platforms through the scheduler stub', () => {
+  test('P1 NEGATIVE with no scheduler backend (linux), V2 does not FAIL the generator context; P2 it states the skip and names the platform', () => {
+    const lines = v2Lines('linux');
+    const failed = lines.filter((l) => /^FAILED V2: .*query unavailable/.test(l));
+    assert.deepEqual(failed, [], 'no FAILED V2 live-half line');
+    assert.ok(
+      lines.some((l) => /^WARNING V2 SKIPPED \(live half\): .*platform=linux/.test(l)),
+      `expected a WARNING V2 SKIPPED line naming platform=linux, got: ${lines.join(' | ') || '(nothing)'}`
+    );
+  });
 
-console.log(failures === 0 ? '\ntest-validate-v2-platform: ALL PASS' : `\ntest-validate-v2-platform: ${failures} FAILURE(S)`);
-process.exit(failures === 0 ? 0 : 1);
+  test('P3 NEGATIVE a supported backend whose query cannot run still FAILS V2', () => {
+    // C4_LAUNCHCTL_THROW stages the failure inside the fixture: cp.spawnSync/execFileSync are
+    // patched to intercept any call named launchctl before it reaches a real binary, whatever the host
+    // actually is, so this case runs the same way on a real darwin runner as on Windows or Linux.
+    const lines = v2Lines('darwin', { C4_LAUNCHCTL_THROW: '1' });
+    assert.ok(
+      lines.some((l) => /^FAILED V2: V2 \(live half\): launchd query unavailable/.test(l)),
+      `expected a FAILED V2 launchd-unavailable line, got: ${lines.join(' | ') || '(nothing)'}`
+    );
+  });
+});

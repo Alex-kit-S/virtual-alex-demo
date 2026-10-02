@@ -1,5 +1,5 @@
 {
-  "_generated_at": "2026-09-24T07:00:41Z",
+  "_generated_at": "2026-10-02T17:05:37Z",
   "_purpose": "Which numbered migrations have run on this copy, so that each one runs exactly once.",
   "_schema": "migrations-applied@1",
   "_writer": "scripts/run-migrations.js",
@@ -8,6 +8,11 @@
       "date": "2026-09-24",
       "id": "001-structural-voice-tells",
       "status": "applied"
+    },
+    {
+      "date": "2026-10-02",
+      "id": "002-install-state-seed",
+      "status": "not-applicable"
     }
   ]
 }

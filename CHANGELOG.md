@@ -8,6 +8,48 @@ Sensitive files are the ones that change how Alex behaves: settings, commands, h
 libraries, workflows, Routine orders and `CLAUDE.md`. `/update` names them before it asks for
 your yes.
 
+## Build 47 (2026-10-02 17:00 UTC)
+
+- 225 of 900 files changed.
+- Sensitive files: `.claude/commands/alex-status.md`, `.claude/commands/update.md`, `.github/workflows/ci.yml`, `.github/workflows/heartbeat.yml`, `CLAUDE.md`, `scripts/hooks/pre-commit`, `scripts/lib/args.js`, `scripts/lib/atomic-write.js`, `scripts/lib/build-soul-core.js`, `scripts/lib/cli-version.js`, `scripts/lib/errors.js`, `scripts/lib/exit-codes.js`, `scripts/lib/gen-claude-region.js`, `scripts/lib/gen-command-headers.js`, `scripts/lib/gen-docs.js`, `scripts/lib/gen-launchd.js`, `scripts/lib/gen-routines.js`, `scripts/lib/gen-routing-table.js`, `scripts/lib/gen-scheduler.js`, `scripts/lib/gen-tokens.js`, `scripts/lib/git.js`, `scripts/lib/install-profile.js`, `scripts/lib/install-state.js`, `scripts/lib/json-writer.js`, `scripts/lib/log.js`, `scripts/lib/manifest-claim.js`, `scripts/lib/markers.js`, `scripts/lib/migration-ledger.js`, `scripts/lib/radar-feeds.js`, `scripts/lib/read-sources.js`, `scripts/lib/render-changelog.mjs`, `scripts/lib/render-templates.js`, `scripts/lib/repo-root.js`, `scripts/lib/run-log-read.js`, `scripts/lib/session-branch.sh`, `scripts/lib/skill-state.js`, `scripts/lib/staged-paths.js`, `scripts/lib/template-gate.mjs`, `scripts/lib/validate/commit.js`, `scripts/lib/validate/manifest-docs.js`, `scripts/lib/validate/remote.js`, `scripts/lib/validate/shipped.js`, `scripts/lib/validate/skills-json.js`, `scripts/lib/validate/state-words.js`, `scripts/lib/validate/structure.js`, `scripts/lib/write-lock.js`.
+- Built from Kit commit `5a723ed37e9b`.
+
+## Build 46 (2026-09-28 21:57 UTC)
+
+- 7 of 816 files changed.
+- Sensitive files: none.
+- Built from Kit commit `96cf47ab880b`.
+
+## Build 45 (2026-09-26 20:16 UTC)
+
+- 9 of 816 files changed.
+- Sensitive files: `.claude/commands/new.md`, `.github/workflows/ci.yml`, `CLAUDE.md`.
+- Built from Kit commit `851597ee05fc`.
+
+## Build 44 (2026-09-26 10:43 UTC)
+
+- 9 of 815 files changed.
+- Sensitive files: `scheduler/routines/brief.md`, `scheduler/routines/housekeeping.md`, `scheduler/routines/radar.md`, `scheduler/routines/triage.md`.
+- Built from Kit commit `99594607c7b1`.
+
+## Build 43 (2026-09-25 17:52 UTC)
+
+- 2 of 815 files changed.
+- Sensitive files: none.
+- Built from Kit commit `68a880eadb99`.
+
+## Build 42 (2026-09-25 12:01 UTC)
+
+- 2 of 815 files changed.
+- Sensitive files: none.
+- Built from Kit commit `27bb529a04bc`.
+
+## Build 41 (2026-09-25 01:45 UTC)
+
+- 10 of 815 files changed.
+- Sensitive files: none.
+- Built from Kit commit `d748e719b2f7`.
+
 ## Build 40 (2026-09-24 14:52 UTC)
 
 - 1 of 815 files changed.

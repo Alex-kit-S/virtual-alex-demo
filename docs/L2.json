@@ -1,0 +1,2165 @@
+{
+  "_generated_at": "2026-09-30T19:39:07Z",
+  "_purpose": "The L2 surface of docs/CODE-STANDARD.md section 3.5: every file a frozen caller reaches, its frozen export names, and each caller with the arguments it passes and what it reads back.",
+  "_schema": "alex/l2-surface@1",
+  "_writer": "scripts/tests/test-l2-surface.mjs",
+  "census": {
+    "rows": 2089,
+    "sha256": "4d87fa0efd9b725a33480c25d43a1fc5172f7b32a77141078c3e73b965cd0c91"
+  },
+  "dropped_by_plan": [
+    "scripts/facts-check.js",
+    "scripts/hooks-gate-dry-run.mjs",
+    "scripts/kit-doctor.js",
+    "scripts/lesson-harvest.js",
+    "scripts/personal-data-scan.js",
+    "scripts/stale-status-check.js",
+    "scripts/tests/test-facts-check-c21.mjs",
+    "scripts/tests/test-hooks-gate-dry-run.mjs",
+    "scripts/tests/test-kit-doctor.mjs",
+    "scripts/tests/test-lesson-harvest-inject.mjs",
+    "scripts/tests/test-personal-data-scan.mjs",
+    "scripts/tests/test-recall-harvest.mjs",
+    "system/recall/harvest.js",
+    "system/recall/harvesters/h-attest.js",
+    "system/recall/harvesters/h-manifest.js",
+    "system/recall/harvesters/h-recovery.js",
+    "system/recall/harvesters/h-scheduler.js",
+    "system/recall/harvesters/h-skills.js",
+    "system/recall/harvesters/h-validators.js",
+    "system/recall/lib/db.js",
+    "system/recall/lib/facts.js",
+    "system/recall/lib/harvest-core.js",
+    "system/recall/recall-inject.js"
+  ],
+  "files": [
+    {
+      "callers": [
+        {
+          "args": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/autosave.sh\" --json; fi; matcher Write|Edit|MultiEdit; no timeout (600 s default)",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R2:3",
+          "class": "hook",
+          "line": 67,
+          "reach": "execute",
+          "reads_back": "stdout: nothing, or one {\"systemMessage\": ..., \"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": ...}}, the same text for the owner and the model; exit code ignored for PostToolUse",
+          "what": "cli --json (PostToolUse hook)"
+        },
+        {
+          "args": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/autosave.sh\" --stop --json; fi; timeout 120",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R2:4",
+          "class": "hook",
+          "line": 97,
+          "reach": "execute",
+          "reads_back": "stdout: nothing, or one {\"decision\":\"block\",\"reason\":...} unless stop_hook_active; exit always 0",
+          "what": "cli --stop --json (Stop hook, stdin payload)"
+        },
+        {
+          "args": "bash scripts/autosave.sh (after the sweep, because a Bash-written file is not caught by the write hook)",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R2:151",
+          "class": "routine",
+          "line": 42,
+          "reach": "execute",
+          "reads_back": "stdout result line (quoted in the run)",
+          "what": "cli (plain, by hand)"
+        },
+        {
+          "args": "bash scripts/autosave.sh --stop",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R2:161",
+          "class": "command",
+          "line": 329,
+          "reach": "execute",
+          "reads_back": "stdout result line, quoted",
+          "what": "cli --stop"
+        },
+        {
+          "args": "bash scripts/autosave.sh --stop",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R2:163",
+          "class": "command",
+          "line": 439,
+          "reach": "execute",
+          "reads_back": "stdout result line",
+          "what": "cli --stop"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/autosave.sh"
+    },
+    {
+      "callers": [
+        {
+          "args": "node scripts/bootstrap.mjs --repair-links  (Kit /setup step 1)",
+          "caller": ".claude/commands/setup.md",
+          "census_row": "R4:1",
+          "class": "command",
+          "line": 44,
+          "reach": "execute",
+          "reads_back": "the model tells the user \"Skills are installed and verified against the lockfile\" (:47); no line is parsed",
+          "what": "cli --repair-links"
+        },
+        {
+          "args": "set +e; node scripts/bootstrap.mjs; code=$?  (macOS job)",
+          "caller": ".github/workflows/ci.yml",
+          "census_row": "R4:2",
+          "class": "ci",
+          "line": 237,
+          "reach": "execute",
+          "reads_back": "exit code: 1 fails the step (`bootstrap.mjs crashed (exit 1)`), 0 or 2 pass (:240-241)",
+          "what": "cli (doctor)"
+        },
+        {
+          "args": "call powershell -NoProfile -ExecutionPolicy Bypass -File \"scripts\\bootstrap.ps1\" -RepairJunctions >>\"%LOG%\" 2>&1",
+          "caller": "Install-Alex.cmd",
+          "census_row": "R4:8",
+          "class": "launcher",
+          "line": 251,
+          "reach": "execute",
+          "reads_back": "nothing (exit ignored; :253 logs `skill junctions repaired` unconditionally)",
+          "what": "cli --repair-links (through scripts/bootstrap.ps1 -RepairJunctions)"
+        },
+        {
+          "args": "node scripts/bootstrap.mjs --repair-links >>\"$LOG\" 2>&1",
+          "caller": "Install-Alex.command",
+          "census_row": "R4:9",
+          "class": "launcher",
+          "line": 246,
+          "reach": "execute",
+          "reads_back": "nothing (exit ignored; :247 logs `skill links repaired` unconditionally)",
+          "what": "cli --repair-links"
+        },
+        {
+          "args": "& node <repo>\\scripts\\bootstrap.mjs [--repair-links when -RepairJunctions]",
+          "caller": "scripts/bootstrap.ps1",
+          "census_row": "R4:10",
+          "class": "dropped",
+          "line": 14,
+          "reach": "execute",
+          "reads_back": "exit code passed through unchanged (:17 exit $LASTEXITCODE)",
+          "what": "cli --repair-links (shim)"
+        },
+        {
+          "args": "execFileSync(node, [<ROOT>/scripts/bootstrap.mjs, '--repair-links'])",
+          "caller": "scripts/kit-doctor.js",
+          "census_row": "R4:12",
+          "class": "dropped",
+          "line": 180,
+          "reach": "execute",
+          "reads_back": "exit code only: non-zero (ANY required MISS) prints `reconnecting skills: FAILED`, 0 prints done; stdout discarded",
+          "what": "cli --repair-links via execFileSync"
+        },
+        {
+          "args": "call powershell -NoProfile -ExecutionPolicy Bypass -File \"scripts\\bootstrap.ps1\" -RepairJunctions >>\"%LOG%\" 2>&1",
+          "caller": "Update-Alex.cmd",
+          "census_row": "R4:26",
+          "class": "launcher",
+          "line": 118,
+          "reach": "execute",
+          "reads_back": "nothing (exit ignored, output to the log)",
+          "what": "cli --repair-links (through scripts/bootstrap.ps1 -RepairJunctions)"
+        },
+        {
+          "args": "node scripts/bootstrap.mjs --repair-links >>\"$LOG\" 2>&1",
+          "caller": "Update-Alex.command",
+          "census_row": "R4:27",
+          "class": "launcher",
+          "line": 119,
+          "reach": "execute",
+          "reads_back": "nothing (exit ignored)",
+          "what": "cli --repair-links"
+        },
+        {
+          "args": "node scripts/bootstrap.mjs --repair-links  (under CLAUDE_CODE_REMOTE=true)",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R4:28",
+          "class": "command",
+          "line": 68,
+          "reach": "execute",
+          "reads_back": "stdout: two PASS rows quoted, the skill store and `core.hooksPath` `scripts/hooks (set and read back)`; either a MISS = stop and show it (:71-75)",
+          "what": "cli --repair-links (online schema)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/bootstrap.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "import { KIT, DEFAULT_REMOTE, CHANGELOG_REL }",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:1",
+          "class": "dropped",
+          "line": 54,
+          "reach": "import",
+          "reads_back": "values: KIT as kitRoot default (:366), DEFAULT_REMOTE as the --template default (:337) and in the seed-target guard (:419), CHANGELOG_REL as the path git show reads (:121, :238)",
+          "what": "export KIT, DEFAULT_REMOTE, CHANGELOG_REL"
+        },
+        {
+          "args": "git show <commit>:system/template-changelog.jsonl (changelogAt)",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:2",
+          "class": "dropped",
+          "line": 121,
+          "reach": "import",
+          "reads_back": "file system/template-changelog.jsonl at a template commit: one JSON row per line, build at its position (re-implements nextBuild)",
+          "what": "export CHANGELOG_REL"
+        },
+        {
+          "args": "git show <root sha>:system/template-changelog.jsonl (realSeedHistory)",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:3",
+          "class": "dropped",
+          "line": 238,
+          "reach": "import",
+          "reads_back": "the row count of the jsonl in the seed build dir root commit = the template build a seed was born from",
+          "what": "export CHANGELOG_REL"
+        },
+        {
+          "args": "template: DEFAULT_REMOTE (the --template default)",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:4",
+          "class": "dropped",
+          "line": 337,
+          "reach": "import",
+          "reads_back": "value",
+          "what": "export DEFAULT_REMOTE"
+        },
+        {
+          "args": "seed target guard",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:5",
+          "class": "dropped",
+          "line": 419,
+          "reach": "import",
+          "reads_back": "value (compared case-insensitively by its own normalizeRemote :83-88)",
+          "what": "export DEFAULT_REMOTE"
+        },
+        {
+          "args": "kitRoot default",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:6",
+          "class": "dropped",
+          "line": 366,
+          "reach": "import",
+          "reads_back": "value: the cwd of every d.node() call (realNode :222-224)",
+          "what": "export KIT"
+        },
+        {
+          "args": "node scripts/build-online-template.mjs --check --remote <template> (default --out, default --template-remote)",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:7",
+          "class": "dropped",
+          "line": 456,
+          "reach": "execute",
+          "reads_back": "exit code 0 = the Kit generates template main; non-zero = Refusal \"kit = template\"",
+          "what": "cli --check --remote <template>"
+        },
+        {
+          "args": "node scripts/build-online-template.mjs --push --seed <seedDir> --remote <seedRemote> --out <workDir>/seed-build/<norm>",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:9",
+          "class": "dropped",
+          "line": 477,
+          "reach": "execute",
+          "reads_back": "exit code 0; else the last 4 output lines quoted (:479)",
+          "what": "cli --push --seed <dir> --remote <seed> --out <buildDir>"
+        },
+        {
+          "args": "node scripts/build-online-template.mjs --check --seed <seedDir> --remote <seedRemote> --out <buildDir> (read back)",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R3:12",
+          "class": "dropped",
+          "line": 488,
+          "reach": "execute",
+          "reads_back": "exit code 0 AND the CHECK OK sha equal to the pushed sha",
+          "what": "cli --check --seed <dir> --remote <seed> --out <buildDir>"
+        },
+        {
+          "args": "import {...}",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R3:15",
+          "class": "dropped",
+          "line": 47,
+          "reach": "import",
+          "reads_back": "values and functions (below)",
+          "what": "export KIT, seedFiles, planTree, trackedEntries, resolveRows, loadManifest, VARIANTS_REL"
+        },
+        {
+          "args": "planTree(trackedEntries(kitRoot), resolveRows(loadManifest(<kitRoot>/system/kit-manifest.json)), kitRoot)",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R3:16",
+          "class": "dropped",
+          "line": 126,
+          "reach": "import",
+          "reads_back": "plan.files filtered to dst basename .gitignore (:127); a Refusal propagates",
+          "what": "export planTree + trackedEntries + resolveRows + loadManifest"
+        },
+        {
+          "args": "checkIgnored copies f.src to f.dst",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R3:17",
+          "class": "dropped",
+          "line": 149,
+          "reach": "import",
+          "reads_back": "file: the Kit WORKING-COPY path in planTree files[].src (not the committed blob the build ships)",
+          "what": "export planTree (file field src)"
+        },
+        {
+          "args": "path.join(kitRoot, VARIANTS_REL, 'CLAUDE.md')",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R3:18",
+          "class": "dropped",
+          "line": 201,
+          "reach": "import",
+          "reads_back": "value 'variants/online'",
+          "what": "export VARIANTS_REL"
+        },
+        {
+          "args": "checkSeed defaults",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R3:19",
+          "class": "dropped",
+          "line": 248,
+          "reach": "import",
+          "reads_back": "value",
+          "what": "export KIT"
+        },
+        {
+          "args": "seedFiles(<seed dir>)",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R3:20",
+          "class": "dropped",
+          "line": 368,
+          "reach": "import",
+          "reads_back": "files[].dst (the payload) and files[].src (read at :385); a Refusal message becomes problem S1",
+          "what": "export seedFiles"
+        },
+        {
+          "args": "fleet default path",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R3:21",
+          "class": "dropped",
+          "line": 397,
+          "reach": "import",
+          "reads_back": "value",
+          "what": "export KIT"
+        },
+        {
+          "args": "await import(<Kit>/scripts/build-online-template.mjs)",
+          "caller": "scripts/tests/test-clone-scrub-scope.mjs",
+          "census_row": "R3:30",
+          "class": "dropped",
+          "line": 155,
+          "reach": "import",
+          "reads_back": "module namespace",
+          "what": "export donorScrub, Refusal (dynamic import)"
+        },
+        {
+          "args": "donorScrub(<staged fixture repo>)",
+          "caller": "scripts/tests/test-clone-scrub-scope.mjs",
+          "census_row": "R3:31",
+          "class": "dropped",
+          "line": 164,
+          "reach": "import",
+          "reads_back": "return 0 or a thrown Refusal",
+          "what": "export donorScrub"
+        },
+        {
+          "args": "B1",
+          "caller": "scripts/tests/test-clone-scrub-scope.mjs",
+          "census_row": "R3:32",
+          "class": "dropped",
+          "line": 168,
+          "reach": "import",
+          "reads_back": "instanceof Refusal and message /donor-name\\] docs\\/planted\\.md:1/",
+          "what": "export Refusal + text [donor-name] <file>:<line>"
+        },
+        {
+          "args": "B2",
+          "caller": "scripts/tests/test-clone-scrub-scope.mjs",
+          "census_row": "R3:33",
+          "class": "dropped",
+          "line": 176,
+          "reach": "import",
+          "reads_back": "instanceof Refusal and message /docs\\/planted\\.md/",
+          "what": "export Refusal + text <file>"
+        }
+      ],
+      "exports": [
+        {
+          "name": "CHANGELOG_REL",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "DEFAULT_REMOTE",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "KIT",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "Refusal",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "VARIANTS_REL",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "donorScrub",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "loadManifest",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "planTree",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "resolveRows",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "seedFiles",
+          "views": [
+            "import"
+          ]
+        },
+        {
+          "name": "trackedEntries",
+          "views": [
+            "import"
+          ]
+        }
+      ],
+      "path": "scripts/build-online-template.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "node \"${CLAUDE_PROJECT_DIR:-.}/scripts/capture-typed-input.js\"",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R2:13",
+          "class": "hook",
+          "line": 87,
+          "reach": "execute",
+          "reads_back": "exit code (2 would erase the prompt; it is always 0); stdout would be injected (it prints nothing)",
+          "what": "cli (UserPromptSubmit hook, stdin {prompt})"
+        },
+        {
+          "args": "same command (laptop), beside recall-inject.js",
+          "caller": ".claude/settings.json",
+          "census_row": "R2:14",
+          "class": "hook",
+          "line": 52,
+          "reach": "execute",
+          "reads_back": "exit code; stdout (nothing)",
+          "what": "cli (UserPromptSubmit hook)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/capture-typed-input.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "bash scripts/close-out-online.sh --job brief --status <COMPLETE|PARTIAL|BLOCKED> --canary <ok|missing> --missed <N> --model <id> --lesson \"L: none\"  (--model omitted when unknown; --reason \"<why>\" when not COMPLETE; a real L-line in place of \"L: none\")",
+          "caller": "scheduler/routines/brief.md",
+          "census_row": "R9:137",
+          "class": "routine",
+          "line": 82,
+          "reach": "execute",
+          "reads_back": "stdout: the model quotes the LAST line (scheduler/routines/brief.md:88), the verdict \"close-out: COMPLETE|INCOMPLETE for brief, ...\"; the exit code is not used",
+          "what": "cli --job --status --canary --missed --model --lesson [--reason]"
+        },
+        {
+          "args": "end with the close using --status BLOCKED --reason \"hooks did not load\"",
+          "caller": "scheduler/routines/brief.md",
+          "census_row": "R9:138",
+          "class": "routine",
+          "line": 16,
+          "reach": "execute",
+          "reads_back": "as above",
+          "what": "cli --status BLOCKED --reason (hooks did not load)"
+        },
+        {
+          "args": "bash scripts/close-out-online.sh --job housekeeping --status <COMPLETE|PARTIAL|BLOCKED> --canary <ok|missing> --missed <N> --model <id> --lesson \"L: none\"  (--model omitted when unknown; --reason \"<why>\" when not COMPLETE; a real L-line in place of \"L: none\")",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:139",
+          "class": "routine",
+          "line": 105,
+          "reach": "execute",
+          "reads_back": "stdout: the model quotes the LAST line (scheduler/routines/housekeeping.md:111), the verdict \"close-out: COMPLETE|INCOMPLETE for housekeeping, ...\"; the exit code is not used",
+          "what": "cli --job --status --canary --missed --model --lesson [--reason]"
+        },
+        {
+          "args": "end with the close using --status BLOCKED --reason \"hooks did not load\"",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:140",
+          "class": "routine",
+          "line": 18,
+          "reach": "execute",
+          "reads_back": "as above",
+          "what": "cli --status BLOCKED --reason (hooks did not load)"
+        },
+        {
+          "args": "bash scripts/close-out-online.sh --job radar --status <COMPLETE|PARTIAL|BLOCKED> --canary <ok|missing> --missed <N> --model <id> --lesson \"L: none\"  (--model omitted when unknown; --reason \"<why>\" when not COMPLETE; a real L-line in place of \"L: none\")",
+          "caller": "scheduler/routines/radar.md",
+          "census_row": "R9:141",
+          "class": "routine",
+          "line": 60,
+          "reach": "execute",
+          "reads_back": "stdout: the model quotes the LAST line (scheduler/routines/radar.md:66), the verdict \"close-out: COMPLETE|INCOMPLETE for radar, ...\"; the exit code is not used",
+          "what": "cli --job --status --canary --missed --model --lesson [--reason]"
+        },
+        {
+          "args": "end with the close using --status BLOCKED --reason \"hooks did not load\"",
+          "caller": "scheduler/routines/radar.md",
+          "census_row": "R9:142",
+          "class": "routine",
+          "line": 17,
+          "reach": "execute",
+          "reads_back": "as above",
+          "what": "cli --status BLOCKED --reason (hooks did not load)"
+        },
+        {
+          "args": "bash scripts/close-out-online.sh --job triage --status <COMPLETE|PARTIAL|BLOCKED> --canary <ok|missing> --missed <N> --model <id> --lesson \"L: none\"  (--model omitted when unknown; --reason \"<why>\" when not COMPLETE; a real L-line in place of \"L: none\")",
+          "caller": "scheduler/routines/triage.md",
+          "census_row": "R9:143",
+          "class": "routine",
+          "line": 55,
+          "reach": "execute",
+          "reads_back": "stdout: the model quotes the LAST line (scheduler/routines/triage.md:61), the verdict \"close-out: COMPLETE|INCOMPLETE for triage, ...\"; the exit code is not used",
+          "what": "cli --job --status --canary --missed --model --lesson [--reason]"
+        },
+        {
+          "args": "end with the close using --status BLOCKED --reason \"hooks did not load\"",
+          "caller": "scheduler/routines/triage.md",
+          "census_row": "R9:144",
+          "class": "routine",
+          "line": 16,
+          "reach": "execute",
+          "reads_back": "as above",
+          "what": "cli --status BLOCKED --reason (hooks did not load)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/close-out-online.sh"
+    },
+    {
+      "callers": [
+        {
+          "args": "the online gate, third leg",
+          "caller": "variants/online/scripts/hooks/pre-commit",
+          "census_row": "R7:35",
+          "class": "git-hook",
+          "line": 73,
+          "reach": "execute",
+          "reads_back": "exit code: 2 prints BLOCKED (found) and exits 1; other non-zero BLOCKED (errored) exit 1; 0 continues silently",
+          "what": "cli --staged"
+        },
+        {
+          "args": "the support bundle redaction pass",
+          "caller": "variants/online/.claude/commands/support-bundle.md",
+          "census_row": "R7:41",
+          "class": "command",
+          "line": 73,
+          "reach": "execute",
+          "reads_back": "the one-line verdict kept in the redaction report",
+          "what": "cli --file"
+        },
+        {
+          "args": "printed when the leg blocks",
+          "caller": "variants/online/scripts/hooks/pre-commit",
+          "census_row": "R7:43",
+          "class": "git-hook",
+          "line": 77,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli --allow-address / --allow-path (taught on a block)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/employer-data-guard.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "node scripts\\generate-alex.js --only=scheduler >>\"%LOG%\" 2>&1",
+          "caller": "Install-Alex.cmd",
+          "census_row": "R6:1",
+          "class": "launcher",
+          "line": 286,
+          "reach": "execute",
+          "reads_back": "errorlevel: non-zero logs \"NOTE: job registration reported a problem\"; zero logs \"scheduled jobs registered\"",
+          "what": "cli --only=scheduler"
+        },
+        {
+          "args": "node scripts/generate-alex.js --only=scheduler >>\"$LOG\" 2>&1",
+          "caller": "Install-Alex.command",
+          "census_row": "R6:2",
+          "class": "launcher",
+          "line": 267,
+          "reach": "execute",
+          "reads_back": "exit code: non-zero logs \"WARNING: job registration reported a problem (run /cron-setup later)\"",
+          "what": "cli --only=scheduler"
+        },
+        {
+          "args": "unified generator `node scripts/generate-alex.js` CREATES MISSING jobs from it on BOTH platforms",
+          "caller": ".claude/commands/cron-setup.md",
+          "census_row": "R6:226",
+          "class": "command",
+          "line": 38,
+          "reach": "execute",
+          "reads_back": "the model reads the output or the exit code",
+          "what": "cli (instruction a model or owner runs)"
+        },
+        {
+          "args": "3. Register the missing ones. The whole set, both platforms: `node scripts/generate-alex.js --only=scheduler`.",
+          "caller": ".claude/commands/cron-setup.md",
+          "census_row": "R6:229",
+          "class": "command",
+          "line": 54,
+          "reach": "execute",
+          "reads_back": "the model reads the output or the exit code",
+          "what": "cli (instruction a model or owner runs)"
+        },
+        {
+          "args": "- If schedule.md changed, run `node scripts/generate-alex.js` so the docs regenerate and V2 re-checks",
+          "caller": ".claude/commands/cron-setup.md",
+          "census_row": "R6:230",
+          "class": "command",
+          "line": 164,
+          "reach": "execute",
+          "reads_back": "the model reads the output or the exit code",
+          "what": "cli (instruction a model or owner runs)"
+        },
+        {
+          "args": "0. **Write the registry entry BEFORE creating anything.** Add the project to `system/manifest.json` `projects[]` (num, name, title, state, t",
+          "caller": ".claude/commands/new.md",
+          "census_row": "R6:235",
+          "class": "command",
+          "line": 13,
+          "reach": "execute",
+          "reads_back": "the model reads the output or the exit code",
+          "what": "cli (instruction a model or owner runs)"
+        },
+        {
+          "args": "1c. **Manifest-entry review nudge (added 2026-07-21, audit F-02 / Class B).** List every `work/**/CLAUDE.md` that changed since the last rev",
+          "caller": ".claude/commands/self-review.md",
+          "census_row": "R6:238",
+          "class": "command",
+          "line": 22,
+          "reach": "execute",
+          "reads_back": "the model reads the output or the exit code",
+          "what": "cli (instruction a model or owner runs)"
+        },
+        {
+          "args": "`system/manifest.json` and run `node scripts/generate-alex.js`. A documented drill counts as a",
+          "caller": ".claude/commands/setup.md",
+          "census_row": "R6:239",
+          "class": "command",
+          "line": 346,
+          "reach": "execute",
+          "reads_back": "the model reads the output or the exit code",
+          "what": "cli (instruction a model or owner runs)"
+        },
+        {
+          "args": "real, then run `node scripts/generate-alex.js`.",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R6:401",
+          "class": "command",
+          "line": 307,
+          "reach": "execute",
+          "reads_back": "the model reads the output or the exit code",
+          "what": "cli (instruction a model or owner runs)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/generate-alex.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "node scripts/heartbeat-check.mjs (daily 07:00 UTC schedule and workflow_dispatch; skipped on a template)",
+          "caller": "variants/online/.github/workflows/heartbeat.yml",
+          "census_row": "R9:153",
+          "class": "ci",
+          "line": 55,
+          "reach": "execute",
+          "reads_back": "exit code: non-zero fails the workflow, which is the owner's e-mail alarm; stdout lands in the Actions log",
+          "what": "cli (no args)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/heartbeat-check.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "node \"$PD/scripts/human-actions.js\" sessionline 2>/dev/null; true",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R2:11",
+          "class": "hook",
+          "line": 77,
+          "reach": "execute",
+          "reads_back": "stdout line (WAITING ON YOU: ...) or nothing, added to Claude context; stderr and exit discarded",
+          "what": "cli sessionline (SessionStart chain last step)"
+        },
+        {
+          "args": "node \"$PD/scripts/human-actions.js\" sessionline 2>/dev/null; true",
+          "caller": ".claude/settings.json",
+          "census_row": "R2:12",
+          "class": "hook",
+          "line": 42,
+          "reach": "execute",
+          "reads_back": "stdout line or nothing",
+          "what": "cli sessionline"
+        },
+        {
+          "args": "node scripts/human-actions.js add --id cap-raise-console --what ... --why ... --severity critical 2>$null",
+          "caller": "scripts/lib/close-out.ps1",
+          "census_row": "R2:28",
+          "class": "dropped",
+          "line": 49,
+          "reach": "execute",
+          "reads_back": "nothing (a duplicate open id exits 1 and is ignored)",
+          "what": "cli add"
+        },
+        {
+          "args": "node scripts/human-actions.js done cap-raise-console 2>$null | Out-Null",
+          "caller": "scripts/lib/close-out.ps1",
+          "census_row": "R2:29",
+          "class": "dropped",
+          "line": 91,
+          "reach": "execute",
+          "reads_back": "nothing; LASTEXITCODE reset to 0 (:92)",
+          "what": "cli done <id> (positional)"
+        },
+        {
+          "args": "& node $haCli done $id 2>$null | Out-Null",
+          "caller": "work/18-recovery-layer/escrow-test.ps1",
+          "census_row": "R2:30",
+          "class": "dropped",
+          "line": 46,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli done <id> (positional)"
+        },
+        {
+          "args": "$open = (& node $haCli list 2>$null | Out-String)",
+          "caller": "work/18-recovery-layer/escrow-test.ps1",
+          "census_row": "R2:31",
+          "class": "dropped",
+          "line": 60,
+          "reach": "execute",
+          "reads_back": "stdout text: whether an id appears",
+          "what": "cli list"
+        },
+        {
+          "args": "& node $haCli add --id passphrase-safeplace-fix --what ...",
+          "caller": "work/18-recovery-layer/escrow-test.ps1",
+          "census_row": "R2:32",
+          "class": "dropped",
+          "line": 62,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli add"
+        },
+        {
+          "args": "node scripts/human-actions.js list",
+          "caller": ".claude/commands/status.md",
+          "census_row": "R2:168",
+          "class": "command",
+          "line": 53,
+          "reach": "execute",
+          "reads_back": "stdout: the open queue with ages",
+          "what": "cli list"
+        },
+        {
+          "args": "node scripts/human-actions.js done --id <id>",
+          "caller": ".claude/commands/status.md",
+          "census_row": "R2:169",
+          "class": "command",
+          "line": 54,
+          "reach": "execute",
+          "reads_back": "exit 1 \"no open item '--id'\" every time: the script takes the id positionally (human-actions D1)",
+          "what": "cli done --id <id> (FLAG form)"
+        },
+        {
+          "args": "node scripts/human-actions.js summary",
+          "caller": ".claude/commands/morning-brief.md",
+          "census_row": "R2:170",
+          "class": "command",
+          "line": 28,
+          "reach": "execute",
+          "reads_back": "stdout JSON: count and oldest named",
+          "what": "cli summary"
+        },
+        {
+          "args": "node scripts/human-actions.js done --id <id>",
+          "caller": ".claude/commands/morning-brief.md",
+          "census_row": "R2:171",
+          "class": "command",
+          "line": 30,
+          "reach": "execute",
+          "reads_back": "always exit 1 (human-actions D1)",
+          "what": "cli done --id <id> (FLAG form)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/human-actions.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "node scripts/import-memory.mjs \"${TMPDIR:-/tmp}/alex-import/memory.zip\"",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R4:32",
+          "class": "command",
+          "line": 422,
+          "reach": "execute",
+          "reads_back": "stdout: the last line (PLAN summary), every `  skip  <entry> (<why>)` line, every `  replaces an existing file  <rel>` line; on exit 2 every `REFUSED Zn ...` line (setup.md:427-431)",
+          "what": "cli <zip> (dry run)"
+        },
+        {
+          "args": "node scripts/import-memory.mjs \"${TMPDIR:-/tmp}/alex-import/memory.zip\" --apply  (+ --overwrite after a yes, :436; --skip-flagged on the owner's say, :429)",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R4:33",
+          "class": "command",
+          "line": 434,
+          "reach": "execute",
+          "reads_back": "stdout: the `import-memory: WROTE <n> file(s); ...` line, quoted (:437); REFUSED lines on exit 2",
+          "what": "cli <zip> --apply [--overwrite] [--skip-flagged]"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/import-memory.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "Kit CI, Windows list",
+          "caller": ".github/workflows/ci.yml",
+          "census_row": "R7:84",
+          "class": "ci",
+          "line": 68,
+          "reach": "execute",
+          "reads_back": "exit code (non-zero fails the job)",
+          "what": "cli --enforced"
+        },
+        {
+          "args": "Kit CI, macOS list",
+          "caller": ".github/workflows/ci.yml",
+          "census_row": "R7:85",
+          "class": "ci",
+          "line": 172,
+          "reach": "execute",
+          "reads_back": "exit code",
+          "what": "cli --enforced"
+        },
+        {
+          "args": "online CI",
+          "caller": "variants/online/.github/workflows/ci.yml",
+          "census_row": "R7:86",
+          "class": "ci",
+          "line": 86,
+          "reach": "execute",
+          "reads_back": "exit code",
+          "what": "cli --enforced"
+        },
+        {
+          "args": "the written fleet file",
+          "caller": "scripts/tests/test-new-virtual-alex.mjs",
+          "census_row": "R7:100",
+          "class": "dropped",
+          "line": 259,
+          "reach": "import",
+          "reads_back": "findings",
+          "what": "export auditText"
+        }
+      ],
+      "exports": [
+        {
+          "name": "auditText",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/json-standard-audit.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "node \"$PD/scripts/lib/build-soul-core.js\" >/dev/null 2>&1 || true",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R2:8",
+          "class": "hook",
+          "line": 77,
+          "reach": "execute",
+          "reads_back": "nothing: stdout, stderr and exit discarded; the card file is read next",
+          "what": "cli (SessionStart chain step 4)"
+        },
+        {
+          "args": "require(path.join(root, 'scripts', 'lib', 'build-soul-core.js')).build({ log: () => {} })",
+          "caller": "scripts/migrations/001-structural-voice-tells.js",
+          "census_row": "R2:22",
+          "class": "migration",
+          "line": 178,
+          "reach": "import",
+          "reads_back": "nothing (try/catch logs \"soul card not rebuilt (<msg>)\")",
+          "what": "export build({log})"
+        },
+        {
+          "args": "$score = (& node \"scripts\\lib\\build-soul-core.js\" 2>&1 | Out-String)",
+          "caller": "scripts/run-vault-index.ps1",
+          "census_row": "R2:23",
+          "class": "dropped",
+          "line": 90,
+          "reach": "execute",
+          "reads_back": "stdout lines matching soul-core|deferred|FAILED (last one); $LASTEXITCODE -eq 1 = FAILED",
+          "what": "cli"
+        },
+        {
+          "args": "node scripts/lib/build-soul-core.js; tail -1 soul-core.md",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R2:159",
+          "class": "command",
+          "line": 229,
+          "reach": "execute",
+          "reads_back": "the stamp line: entries=0 pinned=0 token-count=2; a refusal names the heading or token problem",
+          "what": "cli + file soul-core.md tail"
+        },
+        {
+          "args": "node scripts/lib/build-soul-core.js; quote tail -1 soul-core.md",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R2:160",
+          "class": "command",
+          "line": 324,
+          "reach": "execute",
+          "reads_back": "the stamp line",
+          "what": "cli (final rebuild, no-op expected)"
+        },
+        {
+          "args": "node scripts/lib/build-soul-core.js, then bash scripts/autosave.sh --stop (/setup --import)",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R2:162",
+          "class": "command",
+          "line": 439,
+          "reach": "execute",
+          "reads_back": "the result line; \"A refused in it names a file the commit gate would not save\"",
+          "what": "cli"
+        },
+        {
+          "args": "node scripts/lib/build-soul-core.js; tail -1 soul-core.md",
+          "caller": ".claude/commands/setup.md",
+          "census_row": "R2:165",
+          "class": "command",
+          "line": 239,
+          "reach": "execute",
+          "reads_back": "the stamp line entries=0 pinned=0 token-count=2",
+          "what": "cli + file soul-core.md tail"
+        }
+      ],
+      "exports": [
+        {
+          "name": "build",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/lib/build-soul-core.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "node \"$PD/scripts/lib/cli-version.js\" 2>/dev/null",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R2:6",
+          "class": "hook",
+          "line": 77,
+          "reach": "execute",
+          "reads_back": "stdout (nothing, ---CLI-OLD---, ---CLI-UNKNOWN---) added to Claude context; stderr discarded; exit not read",
+          "what": "cli (SessionStart chain step 2)"
+        },
+        {
+          "args": "node scripts/lib/cli-version.js --show",
+          "caller": "variants/online/.claude/commands/alex-status.md",
+          "census_row": "R2:157",
+          "class": "command",
+          "line": 12,
+          "reach": "execute",
+          "reads_back": "stdout: raw version and verdict; ---CLI-OLD--- or ---CLI-UNKNOWN--- triggers the log fallback (:19)",
+          "what": "cli --show"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/lib/cli-version.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "generate(schedule, {apply:false}) then plutil",
+          "caller": ".github/workflows/ci.yml",
+          "census_row": "R6:74",
+          "class": "ci",
+          "line": 259,
+          "reach": "import",
+          "reads_back": "r.lint values: any false or null fails the step; r.written.length printed",
+          "what": "export generate"
+        }
+      ],
+      "exports": [
+        {
+          "name": "generate",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/lib/gen-launchd.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "node -e \"require('./scripts/lib/install-state.js').stamp('.', process.argv[1], {by:'/update'})\" \"$HEAD_T\"",
+          "caller": ".claude/commands/update.md",
+          "census_row": "R4:63",
+          "class": "command",
+          "line": 280,
+          "reach": "import",
+          "reads_back": "nothing printed is read; the next line `git add system/install-state.json system/migrations-applied.json` (:281) reads the FILE; a throw exits non-zero and update.md names no handling for it",
+          "what": "export stamp (node -e)"
+        },
+        {
+          "args": "first-Monday brief: `node scripts/lib/install-state.js line`",
+          "caller": "scheduler/routines/brief.md",
+          "census_row": "R4:69",
+          "class": "routine",
+          "line": 56,
+          "reach": "execute",
+          "reads_back": "stdout: printed \"as it prints it\" in the brief",
+          "what": "cli line"
+        },
+        {
+          "args": "prose: alex-status and the brief print it",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R4:70",
+          "class": "routine",
+          "line": 94,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli line (prose)"
+        },
+        {
+          "args": "require('./lib/install-state.js')",
+          "caller": "scripts/kit-doctor.js",
+          "census_row": "R4:73",
+          "class": "dropped",
+          "line": 46,
+          "reach": "import",
+          "reads_back": "read(ROOT) at :60 (template_commit, template_updated_at); stamp(ROOT, head, {by: 'kit-doctor --repair'}) at :197 (return ignored, a throw is uncaught)",
+          "what": "require read, stamp"
+        },
+        {
+          "args": "require('../lib/install-state.js')",
+          "caller": "scripts/migrations/002-install-state-seed.js",
+          "census_row": "R4:78",
+          "class": "migration",
+          "line": 28,
+          "reach": "import",
+          "reads_back": "read(root) truthiness at :40; stamp(root, head, {by: ID}) at :57 (a throw becomes a decline)",
+          "what": "require read, stamp"
+        },
+        {
+          "args": "call node -e \"require('./scripts/lib/install-state.js').stamp('.', process.argv[1], {by:'Update-Alex.cmd', at:process.argv[2]})\" \"%AFTER%\" \"%TODAY%\" >>\"%LOG%\" 2>&1",
+          "caller": "Update-Alex.cmd",
+          "census_row": "R4:103",
+          "class": "launcher",
+          "line": 137,
+          "reach": "import",
+          "reads_back": "nothing (output to ~/Desktop/update-log.txt, exit ignored; :138 then logs `stamped install-state` unconditionally)",
+          "what": "export stamp (node -e)"
+        },
+        {
+          "args": "node -e \"require('./scripts/lib/install-state.js').stamp('.', process.argv[1], {by:'Update-Alex.command', at:process.argv[2]})\" \"$AFTER\" \"$TODAY\" >>\"$LOG\" 2>&1",
+          "caller": "Update-Alex.command",
+          "census_row": "R4:106",
+          "class": "launcher",
+          "line": 133,
+          "reach": "import",
+          "reads_back": "nothing (output to ~/Desktop/update-log.txt, exit ignored; :134 logs `stamped install-state` unconditionally)",
+          "what": "export stamp (node -e)"
+        },
+        {
+          "args": "node scripts/lib/install-state.js line",
+          "caller": "variants/online/.claude/commands/alex-status.md",
+          "census_row": "R4:107",
+          "class": "command",
+          "line": 11,
+          "reach": "execute",
+          "reads_back": "stdout: the one sentence, printed to the owner as it prints (exit always 0)",
+          "what": "cli line"
+        }
+      ],
+      "exports": [
+        {
+          "name": "read",
+          "views": [
+            "require"
+          ]
+        },
+        {
+          "name": "stamp",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/lib/install-state.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "cwd must be the repo root",
+          "caller": "scripts/close-out-online.sh",
+          "census_row": "R7:119",
+          "class": "heredoc",
+          "line": 91,
+          "reach": "import",
+          "reads_back": "the row text",
+          "what": "require jsonlRow (inline node in a shell script)"
+        },
+        {
+          "args": "a compact run-log row",
+          "caller": "scripts/close-out-online.sh",
+          "census_row": "R7:120",
+          "class": "heredoc",
+          "line": 105,
+          "reach": "import",
+          "reads_back": "the row text",
+          "what": "jsonlRow (use)"
+        },
+        {
+          "args": "the fleet file (ENFORCED)",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R7:129",
+          "class": "dropped",
+          "line": 58,
+          "reach": "import",
+          "reads_back": "parsed / written",
+          "what": "require writeJson, readJson"
+        },
+        {
+          "args": "system/fleet.json",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R7:130",
+          "class": "dropped",
+          "line": 209,
+          "reach": "import",
+          "reads_back": "parsed",
+          "what": "readJson (use)"
+        },
+        {
+          "args": "system/fleet.json",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R7:131",
+          "class": "dropped",
+          "line": 216,
+          "reach": "import",
+          "reads_back": "{written}",
+          "what": "writeJson (use)"
+        },
+        {
+          "args": "the fleet file",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R7:136",
+          "class": "dropped",
+          "line": 119,
+          "reach": "import",
+          "reads_back": "parsed",
+          "what": "require readJson"
+        },
+        {
+          "args": "system/fleet.json",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R7:137",
+          "class": "dropped",
+          "line": 120,
+          "reach": "import",
+          "reads_back": "a throw",
+          "what": "readJson (use)"
+        },
+        {
+          "args": "fixtures",
+          "caller": "scripts/tests/test-seed-contract.mjs",
+          "census_row": "R7:143",
+          "class": "dropped",
+          "line": 51,
+          "reach": "import",
+          "reads_back": "written",
+          "what": "require writeJson"
+        }
+      ],
+      "exports": [
+        {
+          "name": "jsonlRow",
+          "views": [
+            "require"
+          ]
+        },
+        {
+          "name": "readJson",
+          "views": [
+            "require"
+          ]
+        },
+        {
+          "name": "writeJson",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/lib/json-writer.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "require",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R6:52",
+          "class": "dropped",
+          "line": 205,
+          "reach": "import",
+          "reads_back": "the module",
+          "what": "export (whole module)"
+        },
+        {
+          "args": "{root: temp copy}",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R6:53",
+          "class": "dropped",
+          "line": 212,
+          "reach": "import",
+          "reads_back": "warnings become \"install-profile.json radar: <w>\" (test-seed-contract.mjs:125 greps `radar: .*not https`)",
+          "what": "export resolve"
+        },
+        {
+          "args": "node scripts/lib/radar-feeds.js --json",
+          "caller": ".claude/commands/radar.md",
+          "census_row": "R6:56",
+          "class": "command",
+          "line": 27,
+          "reach": "execute",
+          "reads_back": "the model reads configured, note, warnings, feeds and STOPS the sweep when configured is false",
+          "what": "cli --json"
+        },
+        {
+          "args": "node scripts/lib/radar-feeds.js",
+          "caller": ".claude/commands/radar.md",
+          "census_row": "R6:57",
+          "class": "command",
+          "line": 33,
+          "reach": "execute",
+          "reads_back": "the self-watch feed lines (capability diff)",
+          "what": "cli"
+        },
+        {
+          "args": "node scripts/lib/radar-feeds.js --json",
+          "caller": "scheduler/routines/radar.md",
+          "census_row": "R6:58",
+          "class": "routine",
+          "line": 41,
+          "reach": "execute",
+          "reads_back": "the feed list the Routine fetches",
+          "what": "cli --json"
+        },
+        {
+          "args": "node scripts/lib/radar-feeds.js",
+          "caller": ".claude/commands/setup.md",
+          "census_row": "R6:59",
+          "class": "command",
+          "line": 295,
+          "reach": "execute",
+          "reads_back": "the list shown to the owner and every warning it prints",
+          "what": "cli"
+        },
+        {
+          "args": "node scripts/lib/radar-feeds.js",
+          "caller": "variants/online/.claude/commands/setup.md",
+          "census_row": "R6:60",
+          "class": "command",
+          "line": 256,
+          "reach": "execute",
+          "reads_back": "the list shown to the owner",
+          "what": "cli"
+        }
+      ],
+      "exports": [
+        {
+          "name": "resolve",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/lib/radar-feeds.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "macOS job inline node -e",
+          "caller": ".github/workflows/ci.yml",
+          "census_row": "R6:73",
+          "class": "ci",
+          "line": 258,
+          "reach": "import",
+          "reads_back": "the parsed schedule",
+          "what": "export parseScheduleJobs"
+        }
+      ],
+      "exports": [
+        {
+          "name": "parseScheduleJobs",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/lib/read-sources.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "PD=\"${CLAUDE_PROJECT_DIR:-.}\"; bash \"$PD/scripts/lib/session-branch.sh\"",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R2:5",
+          "class": "hook",
+          "line": 77,
+          "reach": "execute",
+          "reads_back": "stdout line added to Claude context (BRANCH:/---BRANCH-NOT-MAIN---/---BRANCH-DIVERGED---); exit code not read (chain continues on ;)",
+          "what": "cli (SessionStart chain step 1)"
+        },
+        {
+          "args": "CLAUDE_PROJECT_DIR=. bash scripts/lib/session-branch.sh",
+          "caller": ".claude/commands/update.md",
+          "census_row": "R2:145",
+          "class": "command",
+          "line": 69,
+          "reach": "execute",
+          "reads_back": "stdout: starts BRANCH: main = go on; ---BRANCH-NOT-MAIN--- or ---BRANCH-DIVERGED--- = stop and quote (:72-75)",
+          "what": "cli (by hand, two-repository session)"
+        },
+        {
+          "args": "CLAUDE_PROJECT_DIR=. bash scripts/lib/session-branch.sh",
+          "caller": "scheduler/routines/snapshot.md",
+          "census_row": "R2:150",
+          "class": "routine",
+          "line": 41,
+          "reach": "execute",
+          "reads_back": "stdout first word: BRANCH: main = go on; NOT-MAIN or DIVERGED = BLOCKED with that line (:42-45)",
+          "what": "cli (by hand, two-repository Routine)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/lib/session-branch.sh"
+    },
+    {
+      "callers": [
+        {
+          "args": "{root: ROOT}",
+          "caller": "scripts/kit-doctor.js",
+          "census_row": "R6:36",
+          "class": "dropped",
+          "line": 88,
+          "reach": "import",
+          "reads_back": "state.parked (missing and surplus links); a throw becomes ERROR \"Skill configuration is inconsistent\"",
+          "what": "export resolve"
+        },
+        {
+          "args": "require",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R6:48",
+          "class": "dropped",
+          "line": 204,
+          "reach": "import",
+          "reads_back": "the module",
+          "what": "export (whole module)"
+        },
+        {
+          "args": "{root: temp copy with the seed profile}",
+          "caller": "scripts/seed-contract-check.mjs",
+          "census_row": "R6:49",
+          "class": "dropped",
+          "line": 207,
+          "reach": "import",
+          "reads_back": "warnings become \"install-profile.json: <w>\"; a throw becomes \"install-profile.json: <message>\"",
+          "what": "export resolve"
+        }
+      ],
+      "exports": [
+        {
+          "name": "resolve",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/lib/skill-state.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "REMOTE=\"$(node scripts/lib/template-gate.mjs remote)\"  (run by the model from the OWNER's old update.md, against the NEW gate)",
+          "caller": ".claude/commands/update.md",
+          "census_row": "R4:110",
+          "class": "command",
+          "line": 103,
+          "reach": "execute",
+          "reads_back": "stdout: exactly one line, the https url, assigned to REMOTE and used at :111 `git fetch \"$REMOTE\" main:refs/alex/template-head`; exit non-zero = quote the stderr line `template-gate: REFUSED - ...` and stop (:106-108)",
+          "what": "cli remote"
+        },
+        {
+          "args": "node scripts/lib/template-gate.mjs ci \"$HEAD_T\"  (HEAD_T = git rev-parse refs/alex/template-head, 40 lowercase hex)",
+          "caller": ".claude/commands/update.md",
+          "census_row": "R4:111",
+          "class": "command",
+          "line": 113,
+          "reach": "execute",
+          "reads_back": "exit code 0 = green: quote the stdout line `CI green on the template head <12>: <run url>` (:120-121); non-zero = quote its line, delete the ref, stop (:121-123)",
+          "what": "cli ci <sha>"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/lib/template-gate.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "require",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R6:68",
+          "class": "dropped",
+          "line": 59,
+          "reach": "import",
+          "reads_back": "the module",
+          "what": "export (whole module)"
+        },
+        {
+          "args": "{name: 'fleet', label: 'new-virtual-alex', log: noop}",
+          "caller": "scripts/new-virtual-alex.mjs",
+          "census_row": "R6:69",
+          "class": "dropped",
+          "line": 558,
+          "reach": "import",
+          "reads_back": "ok false: Refusal lock, exit 2 (a SEPARATE lock name)",
+          "what": "export acquire"
+        }
+      ],
+      "exports": [
+        {
+          "name": "acquire",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "scripts/lib/write-lock.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "C12, Windows weekly",
+          "caller": "work/18-recovery-layer/check.ps1",
+          "census_row": "R8:94",
+          "class": "dropped",
+          "line": 415,
+          "reach": "execute",
+          "reads_back": "exit 2 -> drift rows from the output (:416); other non-0 \"errored\" (:417)",
+          "what": "cli validate"
+        },
+        {
+          "args": "Windows nightly backup, best-effort",
+          "caller": "scripts/vault-backup.ps1",
+          "census_row": "R8:96",
+          "class": "dropped",
+          "line": 73,
+          "reach": "execute",
+          "reads_back": "first output line printed as \"ledger: <line>\" (:74); failure non-fatal",
+          "what": "cli reconcile"
+        },
+        {
+          "args": "macOS nightly backup, best-effort",
+          "caller": "scripts/vault-backup.mjs",
+          "census_row": "R8:97",
+          "class": "dropped",
+          "line": 115,
+          "reach": "execute",
+          "reads_back": "exit 0 -> first stdout line printed (:116); else \"reconcile failed (non-fatal, exit N)\"",
+          "what": "cli reconcile"
+        },
+        {
+          "args": "prose instruction a model follows (writes outputs/deep-audit/, not a manifest key)",
+          "caller": ".claude/commands/deep-audit.md",
+          "census_row": "R8:101",
+          "class": "command",
+          "line": 39,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli add"
+        },
+        {
+          "args": "prose instruction a model follows --project support (outputs/support/ is not a manifest key)",
+          "caller": ".claude/commands/support-bundle.md",
+          "census_row": "R8:102",
+          "class": "command",
+          "line": 67,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli add"
+        },
+        {
+          "args": "online command: --project support --path outputs/support/<date>.md",
+          "caller": "variants/online/.claude/commands/support-bundle.md",
+          "census_row": "R8:103",
+          "class": "command",
+          "line": 83,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli add"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/outputs-ledger.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "/prompting self-check on its own artifact (online and laptops)",
+          "caller": ".claude/commands/prompting.md",
+          "census_row": "R8:154",
+          "class": "command",
+          "line": 27,
+          "reach": "execute",
+          "reads_back": "PASS line or FAILED lines (a model reads them)",
+          "what": "cli --delivered"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/prompt-regression-check.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "node scripts/run-log.mjs last brief",
+          "caller": "scheduler/routines/brief.md",
+          "census_row": "R9:1",
+          "class": "routine",
+          "line": 25,
+          "reach": "execute",
+          "reads_back": "stdout: the newest row for that job as one JSON line, or the literal `none` (a model reads it at run time); `at` date feeds the weekday Missed-N count",
+          "what": "cli last <job>"
+        },
+        {
+          "args": "node scripts/run-log.mjs last",
+          "caller": "scheduler/routines/brief.md",
+          "census_row": "R9:2",
+          "class": "routine",
+          "line": 40,
+          "reach": "execute",
+          "reads_back": "stdout: one JSON line per job; reads status, at (48 h), reason, canary (missing) to open the brief with the health lines",
+          "what": "cli last"
+        },
+        {
+          "args": "node scripts/run-log.mjs last (in place of system/run-status.json for /morning-brief)",
+          "caller": "scheduler/routines/brief.md",
+          "census_row": "R9:3",
+          "class": "routine",
+          "line": 67,
+          "reach": "execute",
+          "reads_back": "stdout: one JSON line per job (the health board)",
+          "what": "cli last"
+        },
+        {
+          "args": "node scripts/run-log.mjs append (legs 2 and 3 write their own rows)",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:4",
+          "class": "routine",
+          "line": 23,
+          "reach": "execute",
+          "reads_back": "nothing (exit code not read)",
+          "what": "cli append"
+        },
+        {
+          "args": "node scripts/run-log.mjs last housekeeping",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:5",
+          "class": "routine",
+          "line": 27,
+          "reach": "execute",
+          "reads_back": "stdout: the newest row for that job as one JSON line, or the literal `none` (a model reads it at run time); `at` feeds the weekly Missed-N count",
+          "what": "cli last <job>"
+        },
+        {
+          "args": "node scripts/run-log.mjs last self-review",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:6",
+          "class": "routine",
+          "line": 48,
+          "reach": "execute",
+          "reads_back": "stdout: the newest row for that job as one JSON line, or the literal `none` (a model reads it at run time); `at` decides the 28-day gate",
+          "what": "cli last <job>"
+        },
+        {
+          "args": "node scripts/run-log.mjs append --job self-review --status <COMPLETE|PARTIAL> --reason \"<one line: what it proposed, or why partial>\"",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:7",
+          "class": "routine",
+          "line": 54,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli append --job --status --reason"
+        },
+        {
+          "args": "node scripts/run-log.mjs append --job self-review --status SKIPPED --reason \"last run <its date>, <D> days ago, the gate is 28 days\"",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:8",
+          "class": "routine",
+          "line": 55,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli append --job --status --reason"
+        },
+        {
+          "args": "node scripts/run-log.mjs last skills",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:9",
+          "class": "routine",
+          "line": 60,
+          "reach": "execute",
+          "reads_back": "stdout: the newest row for that job as one JSON line, or the literal `none` (a model reads it at run time); the reason carries the previous claude.ai sync list",
+          "what": "cli last <job>"
+        },
+        {
+          "args": "append --job skills --status COMPLETE --reason \"claude.ai sync: <the list, comma-separated, or none>\"",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:10",
+          "class": "routine",
+          "line": 63,
+          "reach": "execute",
+          "reads_back": "nothing (check.mjs S leg reads the row next week)",
+          "what": "cli append --job --status --reason"
+        },
+        {
+          "args": "append --job skills --status PARTIAL --reason \"claude.ai sync changed: was <old list>; now <new list>\"",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:11",
+          "class": "routine",
+          "line": 64,
+          "reach": "execute",
+          "reads_back": "nothing (the prompt claims the sweep reads PARTIAL as a WARN; check.mjs:374 makes it GREEN)",
+          "what": "cli append --job --status --reason"
+        },
+        {
+          "args": "append --job skills --status BLOCKED --reason \"/skills unreadable in this session: <what happened>\"",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:12",
+          "class": "routine",
+          "line": 68,
+          "reach": "execute",
+          "reads_back": "nothing (check.mjs S leg turns AMBER on it)",
+          "what": "cli append --job --status --reason"
+        },
+        {
+          "args": "node scripts/run-log.mjs last radar",
+          "caller": "scheduler/routines/radar.md",
+          "census_row": "R9:13",
+          "class": "routine",
+          "line": 26,
+          "reach": "execute",
+          "reads_back": "stdout: the newest row for that job as one JSON line, or the literal `none` (a model reads it at run time); `at` feeds the weekly Missed-N count",
+          "what": "cli last <job>"
+        },
+        {
+          "args": "node scripts/run-log.mjs last snapshot",
+          "caller": "scheduler/routines/snapshot.md",
+          "census_row": "R9:14",
+          "class": "routine",
+          "line": 24,
+          "reach": "execute",
+          "reads_back": "stdout: the newest row for that job as one JSON line, or the literal `none` (a model reads it at run time); `at` feeds the weekly Missed-N count",
+          "what": "cli last <job>"
+        },
+        {
+          "args": "node scripts/run-log.mjs append --job snapshot --status <COMPLETE|BLOCKED|RED> --canary missing --missed <N> --model <id> --reason \"<the branch that landed, or why not>\" --repo <backup_repo> --sha <sha>",
+          "caller": "scheduler/routines/snapshot.md",
+          "census_row": "R9:15",
+          "class": "routine",
+          "line": 65,
+          "reach": "execute",
+          "reads_back": "nothing: the exit code is not checked, so a refused append (bad --sha, a reason starting with --) loses the row silently; the prompt then git-adds system/run-log.jsonl (:72)",
+          "what": "cli append --job --status --canary --missed --model --reason --repo --sha"
+        },
+        {
+          "args": "node scripts/run-log.mjs last triage",
+          "caller": "scheduler/routines/triage.md",
+          "census_row": "R9:17",
+          "class": "routine",
+          "line": 24,
+          "reach": "execute",
+          "reads_back": "stdout: the newest row for that job as one JSON line, or the literal `none` (a model reads it at run time); `at` feeds the daily Missed-N count",
+          "what": "cli last <job>"
+        },
+        {
+          "args": "node scripts/run-log.mjs last (when system/run-log.jsonl exists)",
+          "caller": ".claude/commands/status.md",
+          "census_row": "R9:18",
+          "class": "command",
+          "line": 28,
+          "reach": "execute",
+          "reads_back": "stdout: one JSON line per job, printed to the owner; fields job, at, status, reason, canary, model, missed, session_url, repo, sha",
+          "what": "cli last"
+        },
+        {
+          "args": "node scripts/run-log.mjs last snapshot",
+          "caller": ".claude/commands/status.md",
+          "census_row": "R9:20",
+          "class": "command",
+          "line": 96,
+          "reach": "execute",
+          "reads_back": "stdout: the snapshot row (last verified backup)",
+          "what": "cli last <job>"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/run-log.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "node scripts/run-migrations.js  (step 6, run from the owner's old update.md against the new runner)",
+          "caller": ".claude/commands/update.md",
+          "census_row": "R4:132",
+          "class": "command",
+          "line": 250,
+          "reach": "execute",
+          "reads_back": "stdout, quoted to the owner (:257 \"Quote what it printed\"); the ledger file is committed at :281",
+          "what": "cli (no flag)"
+        },
+        {
+          "args": "execFileSync(node, [<ROOT>/scripts/run-migrations.js])",
+          "caller": "scripts/kit-doctor.js",
+          "census_row": "R4:140",
+          "class": "dropped",
+          "line": 183,
+          "reach": "execute",
+          "reads_back": "exit code only: null (any non-zero) prints FAILED, else done; stdout discarded",
+          "what": "cli (no flag) via execFileSync"
+        },
+        {
+          "args": "call node \"scripts\\run-migrations.js\" >>\"%LOG%\" 2>&1",
+          "caller": "Update-Alex.cmd",
+          "census_row": "R4:151",
+          "class": "launcher",
+          "line": 125,
+          "reach": "execute",
+          "reads_back": "exit code: errorlevel 1 logs `One setup step needs a person; Alex still works.` (:126); output to the log",
+          "what": "cli (no flag)"
+        },
+        {
+          "args": "node scripts/run-migrations.js >>\"$LOG\" 2>&1 || echo ...",
+          "caller": "Update-Alex.command",
+          "census_row": "R4:152",
+          "class": "launcher",
+          "line": 124,
+          "reach": "execute",
+          "reads_back": "exit code non-zero logs `One setup step needs a person; Alex still works.`; output to the log",
+          "what": "cli (no flag)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/run-migrations.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "the Kit laptop gate, first content leg",
+          "caller": "scripts/hooks/pre-commit",
+          "census_row": "R7:1",
+          "class": "git-hook",
+          "line": 77,
+          "reach": "execute",
+          "reads_back": "exit code: 2 prints BLOCKED (found) and exits 1; any other non-zero prints BLOCKED (errored) and exits 1; 0 prints \"pre-commit: secret-scan staged scan clean.\" (:88)",
+          "what": "cli --staged"
+        },
+        {
+          "args": "the online gate, first leg, every autosave commit",
+          "caller": "variants/online/scripts/hooks/pre-commit",
+          "census_row": "R7:2",
+          "class": "git-hook",
+          "line": 40,
+          "reach": "execute",
+          "reads_back": "exit code: 2 and other non-zero block (exit 1); 0 prints the clean line (:50)",
+          "what": "cli --staged"
+        },
+        {
+          "args": "/update step 7, after core.hooksPath is set (the model runs it)",
+          "caller": ".claude/commands/update.md",
+          "census_row": "R7:7",
+          "class": "command",
+          "line": 266,
+          "reach": "execute",
+          "reads_back": "exit 2 (file:line pattern) refuses the WHOLE update: git reset --hard \"$PRE\"",
+          "what": "cli --staged"
+        },
+        {
+          "args": "the support bundle redaction pass (the model runs it)",
+          "caller": "variants/online/.claude/commands/support-bundle.md",
+          "census_row": "R7:8",
+          "class": "command",
+          "line": 71,
+          "reach": "execute",
+          "reads_back": "exit 0 clean; a hit means the redaction missed a shape: fix and re-run before printing",
+          "what": "cli --file"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/secret-scan.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "comment (C17 context)",
+          "caller": "work/18-recovery-layer/check.ps1",
+          "census_row": "R8:133",
+          "class": "dropped",
+          "line": 529,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli --wake"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/skills-park.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "macOS nightly vault-index job, before the index build",
+          "caller": "scripts/run-job.mjs",
+          "census_row": "R8:115",
+          "class": "dropped",
+          "line": 396,
+          "reach": "execute",
+          "reads_back": "last line matching status-rotate: (:398); exit 1 -> \"FAILED (exit 1)\" (:400)",
+          "what": "cli (no args)"
+        },
+        {
+          "args": "Windows nightly vault-index job, before the index build",
+          "caller": "scripts/run-vault-index.ps1",
+          "census_row": "R8:117",
+          "class": "dropped",
+          "line": 34,
+          "reach": "execute",
+          "reads_back": "last line matching status-rotate: (:35-36); exit 1 -> FAILED line (:37)",
+          "what": "cli (no args)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/status-rotate.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "if [ -n \"$ALEX_UNTRUSTED_LANE$ALEX_ROUTINE\" ]; then node \"${CLAUDE_PROJECT_DIR:-.}/scripts/untrusted-lane-guard.js\"; fi; matcher Bash|PowerShell|WebFetch|WebSearch|Write|Edit|MultiEdit|NotebookEdit|mcp__.*",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R2:1",
+          "class": "hook",
+          "line": 56,
+          "reach": "execute",
+          "reads_back": "exit code 2 = Claude Code blocks the tool call and shows stderr to Claude; 0 = allow",
+          "what": "cli (PreToolUse hook, stdin payload)"
+        },
+        {
+          "args": "same command and matcher as the online file (laptop)",
+          "caller": ".claude/settings.json",
+          "census_row": "R2:2",
+          "class": "hook",
+          "line": 32,
+          "reach": "execute",
+          "reads_back": "exit code 2 blocks, 0 allows",
+          "what": "cli (PreToolUse hook, stdin payload)"
+        },
+        {
+          "args": "if (untrustedLane) envExtra.ALEX_UNTRUSTED_LANE = untrustedLane; if (routine) envExtra.ALEX_ROUTINE = '1'",
+          "caller": "scripts/run-job.mjs",
+          "census_row": "R2:36",
+          "class": "dropped",
+          "line": 366,
+          "reach": "execute",
+          "reads_back": "nothing directly",
+          "what": "env ALEX_UNTRUSTED_LANE / ALEX_ROUTINE (arms the hook)"
+        },
+        {
+          "args": "jobClaude('email-triage', { ..., untrustedLane: 'email-triage' })",
+          "caller": "scripts/run-job.mjs",
+          "census_row": "R2:38",
+          "class": "dropped",
+          "line": 514,
+          "reach": "execute",
+          "reads_back": "nothing directly",
+          "what": "env (email-triage armed)"
+        },
+        {
+          "args": "jobClaude('radar', { ..., routine: true })",
+          "caller": "scripts/run-job.mjs",
+          "census_row": "R2:39",
+          "class": "dropped",
+          "line": 524,
+          "reach": "execute",
+          "reads_back": "nothing directly",
+          "what": "env (radar routine mode)"
+        },
+        {
+          "args": "$env:ALEX_UNTRUSTED_LANE = 'email-triage'; $blocksFile = 'outputs\\logs\\untrusted-lane-blocks.jsonl'",
+          "caller": "scripts/run-email-triage.ps1",
+          "census_row": "R2:40",
+          "class": "dropped",
+          "line": 40,
+          "reach": "execute",
+          "reads_back": "blocks file size growth = egress reason, RED (:56-60)",
+          "what": "env + file size"
+        },
+        {
+          "args": "$env:ALEX_UNTRUSTED_LANE = 'morning-brief'; blocks file :34",
+          "caller": "scripts/run-morning-brief.ps1",
+          "census_row": "R2:41",
+          "class": "dropped",
+          "line": 33,
+          "reach": "execute",
+          "reads_back": "blocks file size growth (:50-53)",
+          "what": "env + file size"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/untrusted-lane-guard.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "\"$NODE\" \"$ROOT/scripts/validate-alex.js\" --context=pre-commit --changed (the Kit commit gate, armed by core.hooksPath=scripts/hooks)",
+          "caller": "scripts/hooks/pre-commit",
+          "census_row": "R5:5",
+          "class": "git-hook",
+          "line": 207,
+          "reach": "execute",
+          "reads_back": "exit code: non-zero prints \"BLOCKED - validation failed (see FAILED lines above)\" and exits with the same status (:208-213); 0 lets the commit through",
+          "what": "cli --context=pre-commit --changed"
+        },
+        {
+          "args": "\"$NODE\" \"$ROOT/scripts/validate-alex.js\" --context=pre-commit --changed (the online commit gate; every autosave commits through it with CLAUDE_CODE_REMOTE=true)",
+          "caller": "variants/online/scripts/hooks/pre-commit",
+          "census_row": "R5:8",
+          "class": "git-hook",
+          "line": 93,
+          "reach": "execute",
+          "reads_back": "exit code: non-zero prints \"BLOCKED - validation failed (see FAILED lines above)\" and exits with it (:94-98)",
+          "what": "cli --context=pre-commit --changed"
+        },
+        {
+          "args": "SessionStart: git config core.hooksPath scripts/hooks",
+          "caller": "variants/online/.claude/settings.json",
+          "census_row": "R5:13",
+          "class": "hook",
+          "line": 77,
+          "reach": "execute",
+          "reads_back": "nothing",
+          "what": "cli (indirect, arms the hook)"
+        },
+        {
+          "args": "node scripts\\generate-alex.js --only=scheduler (runs the full validator in the generator context)",
+          "caller": "Install-Alex.cmd",
+          "census_row": "R5:14",
+          "class": "launcher",
+          "line": 286,
+          "reach": "execute",
+          "reads_back": "nothing in the launcher itself; output to the install log",
+          "what": "cli (indirect, generator context)"
+        },
+        {
+          "args": "node scripts/generate-alex.js --only=scheduler",
+          "caller": "Install-Alex.command",
+          "census_row": "R5:15",
+          "class": "launcher",
+          "line": 267,
+          "reach": "execute",
+          "reads_back": "exit code: non-zero logs a WARNING only",
+          "what": "cli (indirect, generator context)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/validate-alex.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "& $py \"scripts\\vault_search.py\" build 2>&1 | Out-String",
+          "caller": "scripts/run-vault-index.ps1",
+          "census_row": "R1:1",
+          "class": "dropped",
+          "line": 47,
+          "reach": "execute",
+          "reads_back": "exit code ($LASTEXITCODE -ne 0 -> throw, :49); stdout+stderr text regex 'indexed\\s+\\d+\\s+files\\s+->\\s+(\\d+)\\s+chunks' -> $chunks (:50); $chunks < 50 -> AMBER run status (:51, :105); output appended to outputs/logs/vault-index.log (:48)",
+          "what": "cli build"
+        },
+        {
+          "args": "spawnSync(py, [REPO/scripts/vault_search.py, 'build'], {timeout: WATCHDOG_MS (2h, :42), killSignal: 'SIGKILL'})",
+          "caller": "scripts/run-job.mjs",
+          "census_row": "R1:3",
+          "class": "dropped",
+          "line": 404,
+          "reach": "execute",
+          "reads_back": "exit code (r.status !== 0 -> closeOut with the output, null -> 1, :407); stdout+stderr logged (:405-406); 0 -> GREEN run status (:409)",
+          "what": "cli build"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/vault_search.py"
+    },
+    {
+      "callers": [
+        {
+          "args": "step 3 of /morning-brief (the brief Routine runs it online)",
+          "caller": ".claude/commands/morning-brief.md",
+          "census_row": "R8:137",
+          "class": "command",
+          "line": 26,
+          "reach": "execute",
+          "reads_back": "one stdout line or nothing, printed into the brief",
+          "what": "cli briefline"
+        },
+        {
+          "args": "/status step 4",
+          "caller": ".claude/commands/status.md",
+          "census_row": "R8:138",
+          "class": "command",
+          "line": 57,
+          "reach": "execute",
+          "reads_back": "one line or nothing",
+          "what": "cli briefline"
+        },
+        {
+          "args": "step 7b: Sent threads newer_than:14d as [{threadId,to,subject,sent_date,has_reply,is_job}]",
+          "caller": ".claude/commands/email-triage.md",
+          "census_row": "R8:139",
+          "class": "command",
+          "line": 42,
+          "reach": "execute",
+          "reads_back": "summary line + JOB THREADS GONE QUIET block, each reported",
+          "what": "cli sweep (stdin JSON)"
+        }
+      ],
+      "exports": [],
+      "path": "scripts/waiting-on-them.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "parseLLine(<the --lesson text>) inside a node heredoc; reached ONLY when --lesson is not answered as none at :83",
+          "caller": "scripts/close-out-online.sh",
+          "census_row": "R8:42",
+          "class": "heredoc",
+          "line": 90,
+          "reach": "import",
+          "reads_back": "{cls, lesson, evidence} -> one row {at, class, evidence, job, lesson} appended to vault/projects/self-review/lessons.jsonl; null -> exit 2 refusal",
+          "what": "export parseLLine"
+        },
+        {
+          "args": "parseLLine(line) per screened log line; upsertLesson(db, {...})",
+          "caller": "scripts/lesson-harvest.js",
+          "census_row": "R8:43",
+          "class": "dropped",
+          "line": 23,
+          "reach": "import",
+          "reads_back": "{action, id, hits, promote}; hits === 3 queues a promotion",
+          "what": "export upsertLesson, parseLLine"
+        }
+      ],
+      "exports": [
+        {
+          "name": "parseLLine",
+          "views": [
+            "require"
+          ]
+        },
+        {
+          "name": "upsertLesson",
+          "views": [
+            "require"
+          ]
+        }
+      ],
+      "path": "system/recall/lib/lessons.js"
+    },
+    {
+      "callers": [
+        {
+          "args": "node work/18-recovery-layer/check.mjs",
+          "caller": "scheduler/routines/housekeeping.md",
+          "census_row": "R9:61",
+          "class": "routine",
+          "line": 39,
+          "reach": "execute",
+          "reads_back": "exit code 0 clean / 2 AMBER / 1 RED or broke (all reported, never a stop); stdout one line per leg; the summary line is quoted (:44); writes last-sweep.md and a sweep row, then `bash scripts/autosave.sh` (:42)",
+          "what": "cli (no args)"
+        }
+      ],
+      "exports": [],
+      "path": "work/18-recovery-layer/check.mjs"
+    },
+    {
+      "callers": [
+        {
+          "args": "step 2b of /self-review (the housekeeping Routine runs /self-review monthly online)",
+          "caller": ".claude/commands/self-review.md",
+          "census_row": "R8:165",
+          "class": "command",
+          "line": 24,
+          "reach": "execute",
+          "reads_back": "corpus printout (files the model may cite); record/resolve result lines",
+          "what": "cli corpus, record, resolve"
+        }
+      ],
+      "exports": [],
+      "path": "work/23-self-review/diagnose/diagnose.js"
+    }
+  ],
+  "rule": "A file is L2 when a caller the rewrite may not change reaches it by running it or importing from it: a hook, a Routine prompt, a command file, a launcher, a git hook, a CI workflow, a migration, a dynamic require, a shell script's inline node program, or dropped Kit code. Tests and the wiring files themselves are not listed. Its path, the listed export names, the arguments and the output its callers read back are frozen."
+}

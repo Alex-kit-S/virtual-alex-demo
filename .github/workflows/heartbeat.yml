@@ -1,26 +1,30 @@
 # Virtual Alex heartbeat: the one workflow that fires on its own in an owner's repository.
-# Generated into the template by scripts/build-online-template.mjs from variants/online/.github/.
 #
-# WHY. Every Routine writes a row to system/run-log.jsonl, and the brief opens with the ones that
-# failed. What no Routine can report is the silent-stop class: every Routine switched off after 72
-# hours without GitHub, a paused subscription, a daily cap that binds every night. Nothing runs, so
-# nothing writes. This job runs on GitHub's side of that boundary once a day and FAILS when the
-# newest row is older than 48 hours or the file is absent, so GitHub mails the owner about a
-# failed workflow. Zero tokens, the free Actions minutes of a private repository.
+# WHAT. Once a day, on GitHub's side, the job checks that the newest row of system/run-log.jsonl is under
+# 48 hours old, and FAILS when it is older or the file is absent, so GitHub mails the owner about a failed
+# workflow. Every Routine writes a row there and the brief opens with the ones that failed; what no Routine
+# can report is the silent stop: every Routine switched off after 72 hours without GitHub, a paused
+# subscription, a daily cap that binds every night. Nothing runs, so nothing writes. Zero tokens, the free
+# Actions minutes of a private repository.
 #
-# WHY THE SCHEDULE SKIPS ON A TEMPLATE (review finding 2, 2026-09-23). The template and every seed
-# carry no run log by construction, so a daily fire there fails every day, for ever, and mails the
-# maintainer a failure each morning. That trains the reader to ignore the one email this job exists
-# to send. So the scheduled fire skips the check where the repository is a GitHub template; a manual
-# workflow_dispatch still runs anywhere, and on the template it fails, which is the proof the check
-# fires. The schedule trigger's first real fire is a first-day test.
+# HOW. scripts/build-online-template.mjs generates this file into the template from variants/online/.github/.
+# A gate step runs first and, on a schedule fire only, asks the API whether the repository is a GitHub
+# template; the check runs unless the answer is exactly "true", and a failed read fails the job, so the alarm
+# can never go quiet by accident. It is a step and not a job-level if because a schedule event carries no
+# webhook payload (GitHub's events reference: "Webhook event payload: Not applicable"), so
+# github.event.repository does not exist on the one fire that needs it. The gate reads the template flag, not
+# the org name, so a template outside Alex-kit-S/ (a public one) is gated too.
 #
-# WHY A GATE STEP AND NOT A JOB if: (2026-09-24, fleet Fix A, review finding F28). The gate used to be
-# the org name, which lets a template outside Alex-kit-S/ (a public one) fail every day. The flag to
-# gate on is is_template, but a schedule event carries no webhook payload (GitHub's events reference:
-# "Webhook event payload: Not applicable"), so github.event.repository does not exist on the one fire
-# that needs it. The first step asks the API, on a schedule fire only; the check runs unless the answer
-# is exactly "true", and a failed read fails the job, so the alarm can never go quiet by accident.
+# NEVER. Run the scheduled check on a template. The template and every seed carry no run log by
+# construction, so a daily fire there would fail every day and mail the maintainer each morning, which
+# trains the reader to ignore the one email this job exists to send. A manual workflow_dispatch still runs
+# anywhere, and on the template it fails, which is the proof the check fires; the schedule's first real fire
+# is a first-day test.
+#
+# contract: read as text by scripts/tests/test-heartbeat-check.mjs:197. Every line below is read: the daily cron, the manual trigger, the gate step and the condition on each later step (that test evaluates it as JavaScript), the script call and the read-only token.
+# The name, the one job with its runner, timeout and Node version, the gate's token and output line, the three steps that read that output, and the two action tags stay as test-online-workflows-contract.mjs lists them.
+# contract: read as text by scripts/tests/test-online-workflows-contract.mjs:91-108.
+# contract: read as text by scripts/tests/test-online-workflows-contract.mjs:122.
 name: Heartbeat
 
 on:

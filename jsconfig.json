@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "allowJs": true, "checkJs": false, "noEmit": true, "strict": true,
+    "module": "nodenext", "moduleResolution": "nodenext", "target": "es2023",
+    "types": ["node"]
+  },
+  "include": ["scripts/**/*.js", "scripts/**/*.mjs", "system/**/*.js", "work/**/*.js", "work/**/*.mjs"]
+}

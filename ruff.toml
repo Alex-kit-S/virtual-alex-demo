@@ -1,0 +1,20 @@
+line-length = 120
+target-version = "py39"
+include = ["scripts/*.py", "scripts/tests/*.py"]
+extend-exclude = [".agents"]
+
+[per-file-target-version]
+"scripts/tests/*.py" = "py310"
+
+[lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "PTH", "RUF", "ARG", "ERA", "BLE", "S"]
+# T20 is deliberately absent: in scripts/vault_search.py the prints ARE the program's output. A
+# debug leftover is caught by the scenario harness instead, as a stdout diff against the baseline.
+
+[lint.per-file-ignores]
+# unittest mandates setUp and tearDown, which N802 would report; a test asserts (S101); and a test of a
+# CLI spawns it (S603). All three are what a test is for, so they are off for tests and nowhere else.
+"scripts/tests/*.py" = ["N802", "S101", "S603"]
+
+[format]
+quote-style = "double"

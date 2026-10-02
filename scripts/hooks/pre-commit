@@ -1,11 +1,13 @@
 #!/bin/sh
-# pre-commit - VIRTUAL ALEX VARIANT of the Kit's commit gate (scripts/build-online-template.mjs copies
-# it into the online tree at scripts/hooks/pre-commit; the Kit's own hook is not read there).
+# pre-commit - VIRTUAL ALEX VARIANT of the Kit's commit gate.
+# contract: read as text by scripts/tests/test-employer-data-guard.mjs:113. Line 2 keeps the words VIRTUAL ALEX VARIANT, which is how that test tells this hook from the Kit's own; the tag sits below line 2 because a line above it would move it.
 #
-# What differs from the Kit's hook, and why (Virtual Alex plan Phase 3, seat 5 C2, C3, C5, C13,
-# 2026-09-23). The online repo is PRIVATE and IS the owner's disk: every autosave commits through this
-# gate (SessionStart sets core.hooksPath), so a leg that cannot run or that blocks on hygiene turns a
-# vault page into a page that dies with the VM. Four legs, in this order:
+# WHAT. scripts/build-online-template.mjs copies this file into the online tree at
+# scripts/hooks/pre-commit (the Kit's own hook is not read there). The online repo is PRIVATE and IS
+# the owner's disk: every autosave commits through this gate (SessionStart sets core.hooksPath), so a
+# leg that cannot run or that blocks on hygiene turns a vault page into a page that dies with the VM.
+#
+# HOW. Four legs, in this order, each one blocking on the first failure:
 #   - secret-scan --staged           the in-repo scanner, first, cannot be absent, fails closed
 #   - the size guard                 no staged blob over 10 MB (MAX_BLOB_BYTES, the twin of the same
 #                                    number in scripts/autosave.sh)
@@ -15,17 +17,22 @@
 #                                    "Employer Data Stays Out Of The Vault" order (a colleague's address
 #                                    at the employer domain, a personnummer, a spreadsheet export under
 #                                    vault/ or inbox/), armed by the two profile fields /setup writes
-#   - (clone-scrub is NOT a leg here: it scans for the Kit author's identity, which is right for the
-#     shared template and wrong for an owner's own notes; see the note where leg 4 used to be)
 #   - validate-alex --context=pre-commit --changed
 #                                    under CLAUDE_CODE_REMOTE=true the DRIFT legs WARN and the CONTENT
 #                                    legs (V10 NEVER-TOUCH, V11 forced-add, V21 the JSON standard on
 #                                    the files in kit-manifest.json json_standard.enforced[]) still block
-# No gitleaks leg: the binary is never on the cloud VM, and an absent extra leg that prints a warning
-# on every autosave is noise on the one surface the owner reads. The secret scan above is the leg.
+# Escape hatch: git's standard `--no-verify`.
 #
-# Escape hatch: git's standard `--no-verify`. Test: node scripts/tests/test-employer-data-guard.mjs
-# runs this file end to end in a throwaway repo (every refusal shown before the pass).
+# NEVER. No clone-scrub leg here: it scans for the Kit author's identity, right for the shared
+# template and wrong for an owner's own notes (an owner's vault will name the friend who set it up;
+# the Kit's own gate runs clone-scrub, and the template build runs it over every generated tree before
+# it ships). No gitleaks leg either: the binary is never on the cloud VM, and an absent extra leg that
+# warns on every autosave is noise on the one surface the owner reads - the secret scan above is the leg.
+#
+# Usage: run automatically by git on commit (core.hooksPath); test-online-pre-commit.mjs runs it as a
+#        hook with recording stubs, test-employer-data-guard.mjs runs it end to end with the real
+#        scanners in a throwaway repo (every refusal shown before the pass)
+# Exit: 0 all four legs pass - 1 any leg blocks or cannot run (fail closed), reason on stderr
 
 ROOT="$(git rev-parse --show-toplevel)" || exit 1
 
@@ -51,10 +58,16 @@ echo "pre-commit: secret-scan staged scan clean."
 
 # --- 2. the size guard: no staged blob over 10 MB. MAX_BLOB_BYTES is the same number as
 #        MAX_BLOB_BYTES in scripts/autosave.sh; change both or neither.
+# contract: read as text by scripts/tests/test-autosave-paths.mjs:418. The size guard keeps the form MAX_BLOB_BYTES=<digits> from column 0, the same number as the autosave.
+# contract: read as text by scripts/tests/test-autosave-paths.mjs:420. The same test also reads scripts/hooks/pre-commit there; this file is what ships at that path, so both lines name it.
+# contract: read as text by scripts/tests/test-online-pre-commit-kit.mjs:38. This loop, from the line
+# below through the size-guard-clean echo, stays byte-identical with the Kit hook's own copy.
+# contract: read as text by scripts/tests/test-online-pre-commit-kit.mjs:39. The same test's other read
+# names this file directly; both lines hold the one comparison, so both are tagged here.
 MAX_BLOB_BYTES=10485760
 BIG="$(git diff --cached --name-only --diff-filter=AM --no-renames -z | tr '\0' '\n' | while IFS= read -r f; do
   [ -n "$f" ] || continue
-  size="$(git cat-file -s ":$f" 2>/dev/null)" || { echo "pre-commit: BLOCKED - cannot read the staged blob for $f (git cat-file failed); fail-closed" >&2; echo "ERR $f"; continue; }
+  size="$(git cat-file -s ":0:$f" 2>/dev/null)" || { echo "pre-commit: BLOCKED - cannot read the staged blob for $f (git cat-file failed); fail-closed" >&2; echo "ERR $f"; continue; }
   if [ "$size" -gt "$MAX_BLOB_BYTES" ]; then
     echo "pre-commit: BLOCKED - $f is $size bytes, over the $MAX_BLOB_BYTES byte size guard (10 MB). A file nobody can diff does not belong in a repo that is the disk." >&2
     echo "BIG $f"
@@ -68,8 +81,8 @@ echo "pre-commit: size guard clean (no staged blob over $MAX_BLOB_BYTES bytes)."
 
 # --- 3. employer-data-guard on the STAGED blobs. A HIT (exit 2) blocks; a guard that cannot run
 #        (a broken allowlist, a git failure) blocks too. With no employer in the profile the address
-#        leg is disarmed and says so; the personnummer and export legs run regardless (master ruling
-#        2026-09-23). It never guards silently.
+#        leg is disarmed and says so; the personnummer and export legs run regardless. It never
+#        guards silently.
 "$NODE" "$ROOT/scripts/employer-data-guard.mjs" --staged
 EDG=$?
 if [ "$EDG" -eq 2 ]; then
@@ -81,19 +94,35 @@ elif [ "$EDG" -ne 0 ]; then
   exit 1
 fi
 
-# --- (no donor-identity leg online, removed 2026-09-23 on test day). clone-scrub guards the
-#     REDISTRIBUTABLE tree: the Kit's own gate runs it, and since 2026-09-24 the template build runs
-#     it over every generated tree before it ships (scripts/build-online-template.mjs, donorScrub).
-#     It is not in this tree at all: its patterns are the author's identity. In an owner's repo it refused,
-#     in silence, every autosave that named the Kit's author, a Routine's run-log row included, and an
-#     owner's vault will name the friend who set it up. The owner's record may name anyone.
+# --- (no donor-identity leg online). clone-scrub guards the REDISTRIBUTABLE tree: the Kit's own gate
+#     runs it, and the template build runs it over every generated tree before it ships
+#     (scripts/build-online-template.mjs, donorScrub). It is not in this tree at all: its patterns are
+#     the author's identity. In an owner's repo it refused, in silence, every autosave that named the
+#     Kit's author, a Routine's run-log row included, and an owner's vault will name the friend who
+#     set it up. The owner's record may name anyone.
 
 # --- 4. validate-alex. Drift legs WARN under CLAUDE_CODE_REMOTE=true; content legs block everywhere.
 echo "pre-commit: validate-alex (full suite, context=pre-commit; V10 = NEVER-TOUCH guard, V11 = forced-add guard on the staged changeset, V21 = JSON standard on enforced files; drift legs WARN under CLAUDE_CODE_REMOTE=true)."
-"$NODE" "$ROOT/scripts/validate-alex.js" --context=pre-commit --changed
+# contract: read as text by scripts/tests/test-validate-cli-contract.mjs:166. The validator call keeps its exact hook form on one line: the quoted node and root variables, the root-relative script path, then the pre-commit context and the changed flag.
+# Captured to a file per stream, rather than left to stream straight through: a module that
+# fails to load or an uncaught throw prints NO "FAILED " line at all, and "see FAILED lines above" would
+# send the reader looking for a line that was never written. Each stream is replayed to its own real
+# stream unchanged right after the child exits, so every existing consumer of this hook's stdout/stderr
+# sees the same bytes on the same stream as before; only the BLOCKED wording below is conditioned on
+# what was captured.
+VALOUT="$(mktemp)"; VALERR="$(mktemp)"
+"$NODE" "$ROOT/scripts/validate-alex.js" --context=pre-commit --changed >"$VALOUT" 2>"$VALERR"
 STATUS=$?
+cat "$VALOUT"
+cat "$VALERR" >&2
 if [ $STATUS -ne 0 ]; then
-  echo "pre-commit: BLOCKED - validation failed (see FAILED lines above)." >&2
+  if grep -q '^FAILED ' "$VALOUT" "$VALERR" 2>/dev/null; then
+    echo "pre-commit: BLOCKED - validation failed (see FAILED lines above)." >&2
+  else
+    echo "pre-commit: BLOCKED - validate-alex exited $STATUS with no FAILED line above; it crashed rather than failed a named check (see the error printed above)." >&2
+  fi
+  rm -f "$VALOUT" "$VALERR"
   exit $STATUS
 fi
+rm -f "$VALOUT" "$VALERR"
 exit 0

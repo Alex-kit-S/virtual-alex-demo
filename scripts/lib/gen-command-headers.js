@@ -1,32 +1,50 @@
-// gen-command-headers.js - emits a GENERATED state/trigger header into each LIVE/EVENT command file
-// (command-layer review F-3/F-4/F-6/F-11, 2026-07-28).
+// @ts-check
+// scripts/lib/gen-command-headers.js - the generated state-and-trigger header in scheduled command files.
 //
-// WHY THIS EXISTS. The 2026-07-28 read-pass found six command files contradicting system/manifest.json
-// on trigger, schedule, method or source of truth. That was not six unrelated typos, it was the
-// predicted outcome of the system's own principle applied unevenly: every surface with a checker agreed
-// with reality, and the one large prose surface with nothing asserting it drifted six times. check.ps1
-// C1 asserts a declared command FILE EXISTS and C2 catches orphan command files; validator V7 uses
-// command NAMES to bind schedule.md sections to projects. All three are filename-level. NOTHING read
-// command file CONTENT.
+// WHAT. A command file under .claude/commands/ tells the agent how to run one project. Its state and its
+// trigger are registry facts, and a hand-written copy of them drifts from system/manifest.json with
+// nothing to notice. So for every command of a LIVE or EVENT project, the header block between the
+// ALEX:CMD-HEADER markers is generated from the registry, and V15 (lib/validate/shipped.js) warns, at
+// generate and commit time, when the block drifts. ON-DEMAND, DORMANT, PARKED and RETIRED commands carry
+// no schedule worth asserting and get no header.
 //
-// THE SHAPE OF THE FIX. Not "parse the prose and compare it to the manifest" - that is the V6
-// anti-pattern (a validator deriving its expectation FROM prose), which is exactly what blocked the
-// generator on 2026-07-24. Instead: REPLACE the prose claim with generated truth between markers, the
-// same mechanism already trusted for the CLAUDE.md routing table. State and trigger then cannot drift,
-// because they are no longer written by hand. V15 asserts the block still matches the registry, which
-// catches a hand-edit or a stale file at commit time.
+// HOW. targets lists every command file that must carry a header, from projects[] and meta.unnumbered.
+// block renders one header: the markers around three quoted lines, which name the project number (two
+// digits, by render-templates' pad), the command, the state and the trigger, point at the registry, the
+// work spec and the status page, and tell the reader not to restate a schedule. apply puts the block into
+// a file's text: with both markers found, it replaces the first pair; with neither, it inserts the block
+// after the first H1 line, or at the top when there is none. An unchanged registry renders the same
+// bytes, so a second run changes nothing.
 //
-// SCOPE: LIVE + EVENT projects only (the owner's call 2026-07-28). ON-DEMAND, DORMANT, PARKED and RETIRED
-// commands have no schedule worth asserting, and a smaller diff is a reviewable diff.
+// NEVER. Parses the prose of a command file to compare it with the registry: the prose is replaced, never
+// read. Writes into a file with one marker but not the other, or with its end marker first: it refuses,
+// and a person looks first. Uses scripts/lib/markers.js: that module refuses a doubled pair and never
+// inserts, while this one replaces the first pair and inserts a missing one, and the generator tests pin
+// both. Writes a file: the caller stages the text it returns.
+//
+// Usage: module only - const { targets, block, apply } = require('./gen-command-headers');
 'use strict';
 
-const BEGIN = '<!-- ALEX:CMD-HEADER:BEGIN generated from system/manifest.json by scripts/generate-alex.js - do not hand-edit -->';
+const { pad } = require('./render-templates');
+
+const BEGIN =
+  '<!-- ALEX:CMD-HEADER:BEGIN generated from system/manifest.json by scripts/generate-alex.js - do not hand-edit -->';
 const END = '<!-- ALEX:CMD-HEADER:END -->';
 const HEADER_STATES = ['LIVE', 'EVENT'];
 
-// Every command file that must carry a header, as {rel, project} pairs.
+/**
+ * @typedef {{ num?: number | null, state: string, trigger: string, commands?: string[], work_dir?: string,
+ *   status_md?: string }} Project
+ * @typedef {{ rel: string, command: string, project: Project }} Target
+ */
+
+/**
+ * Every command file that must carry a header.
+ * @param {{ projects: Project[], meta?: { unnumbered?: Project[] } }} manifest
+ * @returns {Target[]}
+ */
 function targets(manifest) {
-  const rows = [...manifest.projects, ...((manifest.meta && manifest.meta.unnumbered) || [])];
+  const rows = [...manifest.projects, ...(manifest.meta?.unnumbered || [])];
   const out = [];
   for (const p of rows) {
     if (!HEADER_STATES.includes(p.state)) continue;
@@ -35,27 +53,35 @@ function targets(manifest) {
   return out;
 }
 
-// The generated block for one command. Kept to two quoted lines: an agent reads it as context, and a
-// command file's job is method, not registry data.
+/**
+ * The header block for one command: the two markers around three quoted lines.
+ * @param {{ command: string, project: Project }} target
+ * @returns {string}
+ */
 function block({ command, project: p }) {
-  const num = p.num != null ? `#${String(p.num).padStart(2, '0')} ` : '';
+  const num = p.num != null ? `#${pad(p.num)} ` : '';
   const pointers = [
-    `Registry: \`system/manifest.json\``,
+    'Registry: `system/manifest.json`',
     p.work_dir ? `Spec: \`${p.work_dir}/CLAUDE.md\`` : null,
-    p.status_md ? `Status: \`${p.status_md}\`` : null,
-  ].filter(Boolean).join(' · ');
+    p.status_md ? `Status: \`${p.status_md}\`` : null
+  ]
+    .filter(Boolean)
+    .join(' · ');
   return [
     BEGIN,
     `> **${num}/${command} · ${p.state} · Trigger: ${p.trigger}**`,
     `> ${pointers}`,
-    `> *State and trigger above are GENERATED from the registry. Do not restate a schedule elsewhere in this file; point at the registry instead.*`,
-    END,
+    '> *State and trigger above are GENERATED from the registry. Do not restate a schedule elsewhere in this file; point at the registry instead.*',
+    END
   ].join('\n');
 }
 
-// Insert or replace the block. Idempotent: an unchanged manifest re-renders byte-identical output.
-// With no markers present, the block goes directly after the H1 title (or at the top if there is none),
-// which is where a reader looks for what a command is before reading how it works.
+/**
+ * The file's text with its header block replaced, or inserted when the file has none.
+ * @param {string} text
+ * @param {Target} target
+ * @returns {string}
+ */
 function apply(text, target) {
   const b = block(target);
   const bi = text.indexOf(BEGIN);
@@ -65,9 +91,11 @@ function apply(text, target) {
     return text.slice(0, bi) + b + text.slice(ei + END.length);
   }
   if (bi !== -1 || ei !== -1)
-    throw new Error(`gen-command-headers: ${target.rel} has one CMD-HEADER marker but not the other - a human must look before any tool writes`);
+    throw new Error(
+      `gen-command-headers: ${target.rel} has one CMD-HEADER marker but not the other - a human must look before any tool writes`
+    );
   const lines = text.split('\n');
-  const h1 = lines.findIndex(l => /^#\s+/.test(l));
+  const h1 = lines.findIndex((l) => /^#\s+/.test(l));
   if (h1 === -1) return `${b}\n\n${text}`;
   lines.splice(h1 + 1, 0, '', b);
   return lines.join('\n');

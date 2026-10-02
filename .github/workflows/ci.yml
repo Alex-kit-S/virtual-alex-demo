@@ -1,21 +1,30 @@
 # Virtual Alex CI: the Kit's portable tests on the one platform a cloud session runs on, Ubuntu.
-# Generated into the template by scripts/build-online-template.mjs from variants/online/.github/;
-# the Kit's own workflow keeps its Windows and macOS jobs, which run PowerShell and launcher checks
-# that do not exist in this tree (the .ps1 files and the launchers are drop rows in kit-manifest.json).
-# The step list is otherwise the Kit's: scripts/tests/test-ci-parity.mjs fails in the Kit when a step
-# runs in one list and not another without a named reason, so a test written for this tree runs here.
-# The donor-identity scan is not a step here, on purpose: its patterns are the Kit author's identity,
-# so it is not in this tree at all. scripts/build-online-template.mjs runs it over every generated tree
-# before that tree is pushed (row donor-scrub in system/kit-manifest.json).
 #
-# WHY THE JOB IS GATED ON is_template. An owner's repo autosaves on every file write (a PostToolUse
-# hook commits and pushes main), so a workflow that ran on every push would spend the owner's free
-# Actions minutes dozens of times a day and mail them a result each time. The tests prove the
-# TEMPLATE; they run where the repository is a GitHub template (the template itself and every seed)
-# and on demand (workflow_dispatch), never in a template-born owner repo, where the daily heartbeat
-# is the one workflow that should fire. Until 2026-09-24 the gate was the org name, a proxy for
-# "template or seed" that broke with the first owner repo inside the org (the demo), whose vault
-# failed the template's manifest test. scripts/tests/test-ci-parity.mjs leg G evaluates the gate.
+# WHAT. One job, portable-tests, runs the Kit's portable test list on ubuntu-latest. The step list is the
+# Kit's own, less the PowerShell and launcher checks this tree does not carry (the .ps1 files and the
+# launchers are drop rows in system/kit-manifest.json); the Kit's workflow keeps its Windows and macOS jobs.
+#
+# HOW. scripts/build-online-template.mjs generates this file into the template from variants/online/.github/.
+# scripts/tests/test-ci-parity.mjs fails in the Kit when a step runs in one list and not another without a
+# named reason, so a test written for this tree runs here, and its leg G evaluates the job's gate. The gate
+# runs the job where the repository is a GitHub template (the template itself and every seed) and on
+# workflow_dispatch. It reads the template flag, not the org name: an owner repo inside the org is not a
+# template, and its vault would fail the template's manifest test.
+#
+# NEVER. Run in a template-born owner repo. An owner's repo autosaves on every file save (a PostToolUse hook
+# commits and pushes main), so a job that ran on every push would spend the owner's free Actions minutes
+# dozens of times a day and mail them a result each time; the daily heartbeat is the one workflow that fires
+# there. Never carry the donor-identity scan as a step: its patterns are the Kit author's identity, so it is
+# not in this tree at all. scripts/build-online-template.mjs runs it over every generated tree before that
+# tree is pushed (row donor-scrub in system/kit-manifest.json).
+#
+# Every step keeps the shape test-ci-parity.mjs parses and compares across the three lists (a one-line command, or an action with one-line inputs), the title line above keeps its opening words, and the job keeps exactly one gate at four spaces.
+# contract: read as text by scripts/tests/test-ci-parity.mjs:514-527.
+# contract: read as text by scripts/tests/test-ci-parity.mjs:702-704.
+# The name, triggers, read-only token, the one job with its runner, timeout and versions, the floor step last, the action tags and the portability step name stay as test-online-workflows-contract.mjs lists them, line by line.
+# contract: read as text by scripts/tests/test-online-workflows-contract.mjs:58-87.
+# contract: read as text by scripts/tests/test-online-workflows-contract.mjs:112-128.
+# contract: read as text by scripts/tests/test-template-gate.mjs:323. The job id stays at two spaces under the jobs key, with the name the template gate reads as its CI check.
 name: CI
 
 on:
@@ -36,10 +45,23 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: '22.16'
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Base for the code standard's direction leg (the pull request's base branch, or the commit before a push)
+        shell: bash
+        run: if [ "$(git rev-parse --is-shallow-repository)" != true ]; then echo "full history, so the base is already here and nothing is fetched"; elif [ -n "$GITHUB_BASE_REF" ]; then git fetch --no-tags --depth=1 origin "+refs/heads/$GITHUB_BASE_REF:refs/remotes/origin/$GITHUB_BASE_REF"; else git fetch --no-tags --depth=2 origin "$GITHUB_SHA"; fi
+      - name: Code standard checker (every leg of docs/CODE-STANDARD.md 9.7; no file above its ceiling, nothing loosened without a row)
+        run: node scripts/tests/test-code-standard.mjs
+      - name: L2 surface (every file and export name docs/L2.json freezes still resolves)
+        run: node scripts/tests/test-l2-surface.mjs
+      - name: Python tools on the ratchet (ruff check, ruff format --check, mypy --strict on the enforced Python files only)
+        run: node scripts/tests/python-tools.mjs
+      - name: JavaScript tools on the ratchet (biome ci and tsc on the enforced JavaScript files only)
+        run: node scripts/tests/js-tools.mjs
+      - name: Shell lint on the ratchet (shellcheck on the enforced shell files only)
+        run: node scripts/tests/shell-tools.mjs
       - name: Lesson parser (Recall Spine)
         run: node scripts/tests/test-lesson-parse.js
       - name: Protected-file guard (validate-alex V10 core)
@@ -50,6 +72,18 @@ jobs:
         run: node scripts/tests/test-soul-core-floor.mjs
       - name: Vault-search freshness gate (sandboxed index)
         run: python scripts/tests/test_vault_search_freshness.py
+      - name: Vault-search CLI (every mode, exit code and output line other code reads)
+        run: python scripts/tests/test_vault_search_cli.py
+      - name: Vault-search rebuild triggers and blind spots
+        run: python scripts/tests/test_vault_search_rebuild.py
+      - name: Vault-search exclusions (journal, generated index, .obsidian, retired pages; corpus and scan)
+        run: python scripts/tests/test_vault_search_exclusions.py
+      - name: Vault-search index contract (the schema recall-inject.js reads by column position)
+        run: python scripts/tests/test_vault_search_index_contract.py
+      - name: Vault-search odd, locked and half-built index files
+        run: python scripts/tests/test_vault_search_db_states.py
+      - name: Vault-search read log (the row the upstream report parses)
+        run: python scripts/tests/test_vault_search_read_log.py
       - name: Skill link layer (park/wake round-trip + sabotage, POSIX leg)
         run: node scripts/tests/test-skills-park.mjs
       - name: Skill link targets (relative target, and a moved tree keeps working links - the POSIX leg)
@@ -62,6 +96,8 @@ jobs:
         run: node scripts/tests/test-generate-no-soul.mjs
       - name: Generator command line (an unknown flag is refused before anything loads; --help is read-only)
         run: node scripts/tests/test-generate-cli.mjs
+      - name: Generator in the online tree (only the surfaces valid there; no laptop row in the online constitution)
+        run: node scripts/tests/test-generate-online-tree.mjs
       - name: validate-alex V2 on a platform with no local scheduler (the hard FAIL on Linux shown first)
         run: node scripts/tests/test-validate-v2-platform.mjs
       - name: Skill-state resolver (profile layer + MANDATORY floor)
@@ -92,10 +128,60 @@ jobs:
         run: node scripts/tests/test-changelog.mjs
       - name: Virtual Alex autosave and run log (every guard shown refusing before the pass)
         run: node scripts/tests/test-autosave.mjs
+      - name: Heartbeat check paths
+        run: node scripts/tests/test-heartbeat-paths.mjs
+      - name: Run log contract (the lines Routine prompts read)
+        run: node scripts/tests/test-run-log-contract.mjs
+      - name: Online close-out (hard timeout)
+        run: node scripts/tests/test-close-out-online.mjs
+      - name: Recovery check legs
+        run: node scripts/tests/test-check-mjs-legs.mjs
+      - name: Waiting-on-you queue
+        run: node scripts/tests/test-human-actions.mjs
+      - name: Typed-input capture
+        run: node scripts/tests/test-capture-typed-input.mjs
+      - name: Untrusted-lane guard command line
+        run: node scripts/tests/test-lane-guard-cli.mjs
+      - name: Session branch switch and rescue
+        run: node scripts/tests/test-session-branch.mjs
+      - name: Autosave paths
+        run: node scripts/tests/test-autosave-paths.mjs
+      - name: Hook contracts, every event through the real command string
+        run: node scripts/tests/test-hook-contracts.mjs
+      - name: Claude Code version probe
+        run: node scripts/tests/test-cli-version.mjs
+      - name: Soul card builder paths
+        run: node scripts/tests/test-build-soul-core-paths.mjs
+      - name: Online pre-commit legs
+        run: node scripts/tests/test-online-pre-commit.mjs
+      - name: Routine prompt commands, frozen word for word
+        run: node scripts/tests/test-routine-prompt-commands.mjs
+      - name: Git transport for the walls, a clean run, a non-zero exit and a spawn failure
+        run: node scripts/tests/test-git.mjs
+      - name: Staged-path walker and the binary test the walls share
+        run: node scripts/tests/test-staged-paths.mjs
       - name: Secret scanner and the size guard (every refusal shown before the pass)
         run: node scripts/tests/test-secret-scan.mjs
       - name: Employer-data guard and the Virtual Alex commit gate (every refusal shown before the pass)
         run: node scripts/tests/test-employer-data-guard.mjs
+      - name: Secret wall known-bad set and its bypasses
+        run: node scripts/tests/test-secret-scan-known-bad.mjs
+      - name: Employer-data wall known-bad set and its bypasses
+        run: node scripts/tests/test-employer-guard-known-bad.mjs
+      - name: JSON standard ratchet known-bad set and its blind spots
+        run: node scripts/tests/test-json-standard-ratchet.mjs
+      - name: JSON writer output bytes, refusals and atomic replace
+        run: node scripts/tests/test-json-writer-bytes.mjs
+      - name: Status rotation and the outputs ledger
+        run: node scripts/tests/test-status-rotate-ledger.mjs
+      - name: Reply-owed ledger and diagnose attribution
+        run: node scripts/tests/test-waiting-diagnose.mjs
+      - name: The generator's advisory prompt check
+        run: node scripts/tests/test-prompt-stale-checks.mjs
+      - name: skills-park itself, not a copy of it
+        run: node scripts/tests/test-skills-park-cli.mjs
+      - name: Recall spine online reach, and the drop that holds it
+        run: node scripts/tests/test-recall-online-closure.mjs
       - name: Email triage machine block (a typo in a rule is a rule that silently does nothing; every refusal shown)
         run: node scripts/tests/test-triage-rules.mjs
       - name: Memory import for /setup --import (zip-slip, links, size, content legs, overwrite; every refusal shown before the pass)
@@ -106,15 +192,78 @@ jobs:
         run: node scripts/tests/test-validate-routines.mjs
       - name: validate-alex V13 on a tree whose wrappers are drop rows (skip by the row, never by the absence)
         run: node scripts/tests/test-validate-v13-drop.mjs
+      - name: validate-alex known-bad trees, structure and generated surfaces (G1-G4, V1-V5, V7, V9, V15-V17)
+        run: node scripts/tests/test-validate-known-bad-structure.mjs
+      - name: validate-alex known-bad trees, what ships beside the registry (V12-V14, V18, V19, V21)
+        run: node scripts/tests/test-validate-known-bad-shipped.mjs
+      - name: validate-alex V10 and V11 through real git
+        run: node scripts/tests/test-validate-commit-legs.mjs
+      - name: validate-alex text contracts and command line
+        run: node scripts/tests/test-validate-cli-contract.mjs
+      - name: Generator regions, markers, idempotency and the write lock
+        run: node scripts/tests/test-generate-regions.mjs
+      - name: Shared write lock contract
+        run: node scripts/tests/test-write-lock-contract.mjs
+      - name: Atomic write swap, roll-back and recovery marker
+        run: node scripts/tests/test-atomic-write-contract.mjs
+      - name: Generator library contracts
+        run: node scripts/tests/test-generator-libs-contract.mjs
+      - name: Install-profile readers, skill-state and radar-feeds
+        run: node scripts/tests/test-install-profile-readers.mjs
+      - name: Exit codes named once, with the values of the standard's table
+        run: node scripts/tests/test-exit-codes.mjs
+      - name: Refusal and isMain, a linked run shown as main and an import shown as not
+        run: node scripts/tests/test-errors.mjs
+      - name: Repository root, one resolver, and a hook the only caller the harness may redirect
+        run: node scripts/tests/test-repo-root.mjs
+      - name: Argument parser, an unknown flag refused from an operator and named then dropped from a hook
+        run: node scripts/tests/test-args.mjs
+      - name: Marker regions read and rewritten byte for byte, a missing doubled or reversed pair refused
+        run: node scripts/tests/test-markers.mjs
       - name: validate-alex V9 (first-fire aging is silent on a day-one install; the old rule shown failing)
         run: node scripts/tests/test-validate-v9.mjs
       - name: validate-alex V18 (a command resolves against both command trees; an unknown one still fails)
         run: node scripts/tests/test-validate-v18-commands.mjs
       - name: Virtual Alex sweep check.mjs (thirteen legs; every RED and AMBER shown before the pass)
         run: node scripts/tests/test-check-mjs.mjs
+      - name: Run-log reader, the rows and the torn lines apart, on every line shape its three callers meet
+        run: node scripts/tests/test-run-log-read.mjs
       - name: Heartbeat check (48-hour run-log rule; absent and stale shown failing before the pass)
         run: node scripts/tests/test-heartbeat-check.mjs
       - name: /update template gate (a missing source, a red or unread head shown refused before the pass)
         run: node scripts/tests/test-template-gate.mjs
+      - name: Template builder export surface and argument parser
+        run: node scripts/tests/test-build-template-exports.mjs
+      - name: Template builder results, generated files and build directory, end to end in a miniature Kit
+        run: node scripts/tests/test-build-template-results.mjs
+      - name: Template builder known defects
+        run: node scripts/tests/test-build-template-defects.mjs
+      - name: Changelog render byte for byte
+        run: node scripts/tests/test-render-changelog-contract.mjs
+      - name: Online workflows, the lines code and people read
+        run: node scripts/tests/test-online-workflows-contract.mjs
+      - name: Frozen /update and Update-Alex command texts run against this code
+        run: node scripts/tests/test-update-command-contract.mjs
+      - name: Frozen /setup, /alex-status and installer command texts run against this code
+        run: node scripts/tests/test-setup-command-contract.mjs
+      - name: Migrations 001 and 002 as immutable history, byte for byte
+        run: node scripts/tests/test-migrations-frozen.mjs
+      - name: Migrations runner command line and ledger
+        run: node scripts/tests/test-run-migrations-cli.mjs
+      - name: Install record bytes and every line sentence
+        run: node scripts/tests/test-install-state-contract.mjs
+      - name: /update gate on every source shape and CI answer
+        run: node scripts/tests/test-template-gate-cli.mjs
+      - name: Memory importer edges
+        run: node scripts/tests/test-import-memory-edges.mjs
+      - name: Environment doctor rows, modes and exits
+        run: node scripts/tests/test-bootstrap-doctor.mjs
+      - name: Install-profile writer command line and payload
+        run: node scripts/tests/test-install-profile-cli.mjs
       - name: Portability probes (P1-P5)
         run: node scripts/tests/portability-check.mjs
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.9'
+      - name: Python floor, last because the step before it changes python for every later step (vault_search.py builds and searches a fixture vault on 3.9)
+        run: node scripts/tests/python-floor.mjs

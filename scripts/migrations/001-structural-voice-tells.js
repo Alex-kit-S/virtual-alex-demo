@@ -1,33 +1,33 @@
-/*
- * 001-structural-voice-tells.js
- *
- * Adds detection-proofing rule 6, the STRUCTURAL AI tells, to soul.md.
- *
- * WHY A MIGRATION AND NOT AN ORDINARY UPDATE. soul.md is gitignored on purpose: it is the
- * owner's identity file and it is deliberately outside the repo so that whoever hosts the
- * repo never sees their content. That privacy has a cost, and this is it. A git update can
- * ship a skill, a house-style rule, a constitution line, but it can never reach soul.md. So
- * a voice rule needs a migration that runs locally, on their machine, against a file only
- * they have.
- *
- * WHAT THIS RULE IS. Voice rule 3 bans WORDS (delve, leverage, in conclusion). Rule 6 bans
- * SHAPES, which a word filter cannot see: a colon followed by a dramatic reveal, a line that
- * promises what nobody tells you, a closing sentence reaching for a metaphor. The eleven are
- * defined with examples in brand/config/writing-style.md sections 1.9 to 1.17, which ships
- * through git normally, so soul.md carries the short version and points there.
- *
- * RUNNING IT TWICE, OR AFTER /setup. The rule reaches soul.md by two roads: /setup writes a short
- * version at install time, this migration writes a long one for installs that predate that. So
- * "is it already there" cannot be answered by looking for this file's own sentences, and the
- * answer is built from the eleven names instead. See alreadyPresent() below.
- *
- * THE SAFETY RULE, AND IT IS THE POINT OF THE FILE. soul.md was written by /setup from the
- * owner's own interview, so its structure is PROBABLE, not guaranteed. If the anchor is not
- * found, this does nothing at all and says so. It never guesses at a position, never appends
- * to the end hoping for the best, and never leaves a half-written file. soul.md is the one
- * irreplaceable thing they own: everything else in the folder can be re-cloned, and it cannot.
- * Corrupting it to save a round trip is never the right trade.
- */
+// scripts/migrations/001-structural-voice-tells.js - adds voice rule 6, the structural AI tells, to soul.md.
+//
+// WHAT. soul.md is the owner's identity file, gitignored on purpose so whoever hosts the repository never
+// sees it, which means a git update can ship a skill or a constitution line but can never reach it. This
+// migration carries one voice rule in. Rule 3 bans WORDS (delve, leverage, in conclusion); rule 6 bans
+// SHAPES a word filter cannot see: a colon before a dramatic reveal, a line promising what nobody tells
+// you, a closing sentence reaching for a metaphor. soul.md gets the short list of eleven, and
+// brand/config/writing-style.md sections 1.9 to 1.17, which ships by git, holds the examples.
+//
+// HOW. Run once by scripts/run-migrations.js, which calls run({ root, log }). The rule reaches soul.md by
+// two roads, /setup's short version at install time and this long one for older installs, in wording
+// neither fixes, so "already there" is decided by the eleven tell NAMES (TELL_NAMES, three or more) or by
+// this block's own marker, never by a sentence or a rule number. Otherwise the block goes in front of
+// whatever follows the Detection-proofing list, failing that at the end of the Voice Rules section. A
+// timestamped backup is written first; the file is read back and must hold the marker exactly once and
+// have grown, or the original bytes are put back. Then the compiled soul card is rebuilt through
+// scripts/lib/build-soul-core.js, best effort: a stale card only means the session reads the full file.
+// The outcomes: applied; skipped when the rule is there; declined with no soul.md, no anchor, or a write
+// that did not verify.
+//
+// NEVER. Guesses a position, appends to the end hoping for the best, or leaves a half-written file: with
+// no anchor it changes nothing and says so, because soul.md is the one irreplaceable thing the owner has.
+// Changes a byte below this header: every owner's ledger holds this id and a pending machine writes exactly
+// these bytes, so a fix is a new migration or a runner change. Kept as pinned: a list or Voice Rules
+// section that ends the file never gets the rule (R4-9); the rule cites sections 1.9 to 1.17, which hold
+// nine tells (R4-13); a bold line inside the list splits it (R4-L12); a CRLF soul.md comes back with
+// mixed endings (R4-L13); three tell names anywhere, a quote in My Words included, read as present
+// (C3-N1); the Kit's /setup wraps "importance puffery" across a line, which one pattern misses (C3-N2).
+//
+// Usage: module only - run({ root, log }) returns { status, message }; TELL_NAMES is exported for tests
 'use strict';
 const fs = require('fs');
 const path = require('path');

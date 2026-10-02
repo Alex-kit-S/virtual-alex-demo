@@ -1,9 +1,19 @@
-// scripts/tests/fixtures/scheduler-dispatch-probe.cjs
-// The child half of test-scheduler-dispatch.mjs. Forces process.platform, stubs the two binaries
-// the scheduler can reach for, requires the module under test, and prints ONE json line saying
-// which binary it actually called. Kept in its own file rather than inlined as a string: the test
-// needs tabs, newlines and backslashes inside fixture output, and every layer of nesting is one
-// more place for an escape to be eaten (the exact defect class V18 exists to catch).
+// scripts/tests/fixtures/scheduler-dispatch-probe.cjs - the child half of test-scheduler-dispatch.mjs.
+//
+// WHAT. Forces process.platform to the value under test, stubs the two binaries the scheduler can reach
+// for, requires the module under test, and prints one JSON line naming which binary it actually called.
+// Deleted, a regression in the scheduler's per-platform dispatch would go unnoticed by its parent test.
+//
+// HOW. Kept in its own file rather than inlined as a string in the parent test: the fixture output needs
+// tabs, newlines and backslashes, and every layer of string-nesting is one more place for an escape to be
+// eaten. Reads FAKE_PLATFORM and MODULE_PATH from the environment, patches child_process.execFileSync and
+// child_process.spawnSync before the module under test loads, then requires it and calls liveJobs().
+//
+// NEVER. Reaches a real scheduler binary: schtasks, launchctl and their callers are replaced before the
+// module under test is required.
+//
+// Usage: module only - spawned by scripts/tests/test-scheduler-dispatch.mjs with FAKE_PLATFORM and
+//   MODULE_PATH set
 'use strict';
 
 const TAB = String.fromCharCode(9);
@@ -32,7 +42,7 @@ cp.spawnSync = (bin, args) => {
     const rows = [
       '-' + TAB + '0' + TAB + 'Alex-email-triage',
       '-' + TAB + '0' + TAB + 'Alex-retry-foo-2',
-      '123' + TAB + '0' + TAB + 'com.apple.other',
+      '123' + TAB + '0' + TAB + 'com.apple.other'
     ];
     return { status: 0, stdout: rows.join(NL) + NL };
   }
@@ -43,12 +53,18 @@ const g = require(process.env.MODULE_PATH);
 
 let jobs = null;
 let error = null;
-try { jobs = g.liveJobs(); } catch (e) { error = e.message; }
+try {
+  jobs = g.liveJobs();
+} catch (e) {
+  error = e.message;
+}
 
-console.log(JSON.stringify({
-  backend: typeof g.backendName === 'function' ? g.backendName() : null,
-  notRegisterable: typeof g.notRegisterable === 'function' ? Object.keys(g.notRegisterable()) : null,
-  jobs,
-  error,
-  calls,
-}));
+console.log(
+  JSON.stringify({
+    backend: typeof g.backendName === 'function' ? g.backendName() : null,
+    notRegisterable: typeof g.notRegisterable === 'function' ? Object.keys(g.notRegisterable()) : null,
+    jobs,
+    error,
+    calls
+  })
+);

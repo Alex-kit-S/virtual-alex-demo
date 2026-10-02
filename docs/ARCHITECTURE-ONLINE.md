@@ -56,8 +56,12 @@ rewriting the rules:
 - **The deny list** in `.claude/settings.json`: Alex cannot send, reply, forward, share or delete
   through a connector, cannot write to the calendar, and cannot edit its own settings, commands,
   hooks or workflows.
-- **The lane guard**, in Routine and Armed sessions: no `gh`, no remote git, no web addresses in
-  shell commands except the machine itself. Armed sessions also lose the web tools.
+- **The lane guard**, in Routine and Armed sessions: none of the GitHub CLI's repository, pull
+  request, issue, search, API, auth, browse or extension commands, no remote git even through an
+  alias or a variable, no curl or wget even to the machine itself, no inline python or node code
+  that reaches the network, no command that installs, fetches or runs a package (npm, npx, pip and
+  the like), and no other http or https address in a shell command except the machine itself. Armed
+  sessions also lose the web tools.
 - **The commit gate** on every save: a secret scan, a 10 MB size limit, the employer-data guard and
   the repository's own validator.
 - **The identity restore**: a Routine that changes `soul.md` or another identity file has the

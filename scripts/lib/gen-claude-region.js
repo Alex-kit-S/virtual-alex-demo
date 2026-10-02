@@ -1,27 +1,42 @@
-// gen-claude-region.js - regenerates ONLY the marked routing region inside CLAUDE.md (P1-S3).
-// Everything outside the ROUTING-TABLE markers is hand-authored constitution and is preserved
-// byte-for-byte. Refuses to run if the markers are missing, duplicated, or out of order - a
-// malformed region means a human must look before any tool writes.
+// @ts-check
+// scripts/lib/gen-claude-region.js - puts a freshly rendered routing table into CLAUDE.md's marked region.
+//
+// WHAT. CLAUDE.md is the owner's constitution, written by hand, with one generated part: the routing
+// table between its ROUTING-TABLE markers. This module swaps that one region for a new one and leaves
+// every other byte of the file as it was.
+//
+// HOW. regenerate hands the text, the ROUTING_TABLE pair and the new block to scripts/lib/markers.js,
+// which replaces the region, both markers included, with the block trimmed at its end, and keeps the line
+// break after the old end marker. The block carries its own markers; gen-routing-table.js renders it. The
+// refusals are in this module's own words, which the generator tests pin.
+//
+// NEVER. Writes into a CLAUDE.md whose routing markers are missing, doubled or reversed: it refuses, and a
+// person fixes the file before any tool writes it. Touches a byte outside the region. Writes a file: the
+// caller stages the text it returns.
+//
+// Usage: module only - const { regenerate } = require('./gen-claude-region');
 'use strict';
 
-const BEGIN_PREFIX = '<!-- ROUTING-TABLE:BEGIN';
-const END_MARK = '<!-- ROUTING-TABLE:END -->';
+const { PAIRS, replaceRegion } = require('./markers');
 
-function assertMarkers(text, fileLabel) {
-  const b = text.split(BEGIN_PREFIX).length - 1;
-  const e = text.split(END_MARK).length - 1;
-  if (b !== 1 || e !== 1)
-    throw new Error(`gen-claude-region: ${fileLabel} must contain exactly one ROUTING-TABLE BEGIN and END marker (found BEGIN=${b}, END=${e})`);
-  const bi = text.indexOf(BEGIN_PREFIX);
-  const ei = text.indexOf(END_MARK);
-  if (ei < bi) throw new Error(`gen-claude-region: ${fileLabel} markers are out of order (END before BEGIN)`);
-  return { bi, ei };
-}
+/**
+ * The refusals, in the words scripts/tests/test-generator-libs-contract.mjs pins.
+ * @type {import('./markers').Messages}
+ */
+const MESSAGES = {
+  count: (found) =>
+    `gen-claude-region: CLAUDE.md must contain exactly one ROUTING-TABLE BEGIN and END marker (found BEGIN=${found.begin}, END=${found.end})`,
+  order: 'gen-claude-region: CLAUDE.md markers are out of order (END before BEGIN)'
+};
 
-// Replace the whole marked region (markers included) with the freshly rendered block.
+/**
+ * CLAUDE.md with its routing region, markers included, replaced by the block.
+ * @param {string} claudeMdText
+ * @param {string} regionBlock the rendered region, carrying both markers
+ * @returns {string}
+ */
 function regenerate(claudeMdText, regionBlock) {
-  const { bi, ei } = assertMarkers(claudeMdText, 'CLAUDE.md');
-  return claudeMdText.slice(0, bi) + regionBlock.replace(/\s+$/, '') + claudeMdText.slice(ei + END_MARK.length);
+  return replaceRegion(claudeMdText, PAIRS.ROUTING_TABLE, regionBlock, MESSAGES);
 }
 
-module.exports = { regenerate, assertMarkers, BEGIN_PREFIX, END_MARK };
+module.exports = { regenerate };

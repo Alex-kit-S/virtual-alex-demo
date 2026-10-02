@@ -237,8 +237,8 @@ The order matters. Each step depends on the one before it.
 
 ### Step 1: The writer helper
 
-`scripts/lib/json-writer.js`. Done, ported, and proven by `scripts/tests/test-json-writer.js` (70
-assertions, both directions).
+`scripts/lib/json-writer.js`. Done, ported, and proven by `scripts/tests/test-json-writer.js` in both
+directions.
 
     const { writeJson, readJson } = require('./lib/json-writer');
 

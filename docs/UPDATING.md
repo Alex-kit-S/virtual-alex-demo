@@ -166,5 +166,6 @@ Anything touching a gitignored file (`soul.md`, the vault) needs a migration in 
 or it silently never arrives. The contract is documented at the top of `scripts/run-migrations.js`:
 idempotent, back up only immediately before writing, verify by read back, restore on mismatch, and
 decline rather than guess. A declined migration is NOT recorded as applied, so it stays pending
-instead of being lost. Applied ids live in `system/migrations-applied.json`, which is per machine and
-gitignored on a laptop, and tracked online, where the repository is the machine.
+instead of being lost, except a decline by design, which the runner records as not-applicable.
+Applied ids live in `system/migrations-applied.json`, which is per machine and gitignored on a
+laptop, and tracked online, where the repository is the machine.

@@ -1,98 +1,124 @@
+// @ts-check
+// scripts/lib/skill-state.js - which skills are awake on this machine, and the one writer of a skill link.
+//
+// WHAT. One template serves owners who want different skills, so "which skills are awake here" has an
+// answer in three layers, and every consumer must get the same one: bootstrap's link repair, kit-doctor's
+// health report, skills-park and the seed check all call resolve() instead of reading the files
+// themselves, so the doctor can never disagree with the linker on a machine whose owner cannot debug
+// either. The two scripts that make a .claude/skills link both make it through linkSkill().
+//
+// HOW. resolve({ root }) reads the layers in order. 1: <root>/skills-lock.json, the template default every
+// install shares; a row with `parked: true` gets no link. 2: <root>/system/install-profile.json, this
+// machine's own choices; wake[] un-parks a skill the lock parks, park[] parks one it leaves awake, and a
+// name the lock does not know is a warning, never fatal, because a template update may remove a skill.
+// 3: the MANDATORY floor, the skills named in a MANDATORY row of <root>/CLAUDE.md's Skill Bindings table,
+// parsed here and never hardcoded. A profile or a lock that parks one is refused by name: validate-alex.js
+// V17 fails the build on the same fact, and refusing first gives the owner a message instead. A token in
+// a MANDATORY cell counts when the lock knows the name or the name is hyphenated, so prose in the cell
+// ("then", "and") is never read as a skill while a one-word skill (pdf) and a hyphenated one the lock
+// lacks both stay in the floor. V17 keeps its own copy of this parse.
+// linkSkill makes <linkDir>/<name> point at <storeDir>/<name>: a junction with an absolute target on
+// Windows, a symlink with a relative, forward-slashed target everywhere else (skillLinkTarget).
+//
+// NEVER. Writes anything but the link linkSkill makes. Gives a link an absolute target off Windows:
+// online the link folder is committed, so an absolute target is dead in every clone at another path,
+// which is every other owner's. Gives one a relative target on Windows: a junction is the only link
+// Windows makes without elevation, a relative symlink raises EPERM without Developer Mode, and a Windows
+// link never leaves its machine (the folder is gitignored and core.symlinks is off there). Tells a
+// profile that does not parse, a byte-order mark included, from an absent one, or checks that wake and
+// park are lists: scripts/tests/test-install-profile-readers.mjs pins both as they are (R6-7, R6-26)
+// until their fix wave. Requires anything but Node's own modules and json-writer.js's readJsonHeaderless,
+// because the rest of this tree's tests copy this file into a temp tree with only named siblings beside it.
+//
+// Usage: module only
 'use strict';
-/*
- * scripts/lib/skill-state.js - THE single resolver for which skills are awake on THIS machine.
- * (2026-08-31, macOS port Phase 2: the per-install profile layer.)
- *
- * WHY ONE RESOLVER. Three things need the same answer - bootstrap's link repair, kit-doctor's
- * health verdict, and V17's mandatory-binding guard - and before this file each read the lock
- * directly. The moment per-install overrides exist, three private readings become three chances
- * to disagree, and a doctor that disagrees with the linker reports false problems on a machine
- * whose owner cannot debug them. So: one function, everyone calls it.
- *
- * THE LAYERS, in order:
- *   1. skills-lock.json      - the TEMPLATE default (tracked, same for every install). Its
- *                              `parked: true` rows are the shipped baseline: today that is the
- *                              45-skill marketing pack parked, which is right for the two
- *                              translator installs and wrong for a business install.
- *   2. install-profile.json  - the PER-INSTALL override (system/, gitignored, machine-local).
- *                              `wake[]` un-parks, `park[]` parks. This is how one template
- *                              serves different owners with ZERO tracked-file divergence.
- *   3. the MANDATORY floor   - skills named in MANDATORY rows of the constitution's Skill
- *                              Bindings table are force-awake. A profile that tries to park one
- *                              is a hard ERROR, not a preference: V17 fails the build on the
- *                              same fact, and the resolver refusing early gives the owner a
- *                              message instead of a broken build. The set is PARSED from
- *                              CLAUDE.md (same source V17 reads), never hardcoded here.
- *
- * Contract: resolve({ root }) -> {
- *   awake:    Set<name>   skills that should have a .claude/skills link
- *   parked:   Set<name>   skills that deliberately have none
- *   mandatory:Set<name>   the force-awake floor (from CLAUDE.md)
- *   lanes:    object      profile.lanes ({} when no profile)
- *   locale:   string      profile.locale ('en' default)
- *   warnings: string[]    profile rows naming unknown skills (reported, not fatal)
- * }
- * Throws on: unreadable lock, or a profile that parks a MANDATORY skill.
- */
-const fs = require('fs');
-const path = require('path');
 
+const fs = require('node:fs');
+const path = require('node:path');
+const { readJsonHeaderless } = require('./json-writer');
+
+// Native separators: skills-park.js joins it onto the repository root, and a test compares it that way.
 const PROFILE_REL = path.join('system', 'install-profile.json');
+const LOCK_NAME = 'skills-lock.json';
+const CONSTITUTION = 'CLAUDE.md';
+// A Skill Bindings row whose Strength cell, any cell after the first, reads MANDATORY.
+const MANDATORY_ROW = /^\|.*\|\s*MANDATORY\s*\|/;
+// A candidate skill name inside the Skill(s) cell: lowercase words joined by hyphens.
+const NAME_TOKEN = /[a-z0-9]+(?:-[a-z0-9]+)*/g;
+// The Skill(s) cell of a row split on '|': the text before the first pipe is cell 0.
+const SKILLS_CELL = 2;
 
+/**
+ * @typedef {object} SkillState
+ * @property {Set<string>} awake the skills that should have a .claude/skills link
+ * @property {Set<string>} parked the skills that deliberately have none
+ * @property {Set<string>} mandatory the force-awake floor, from CLAUDE.md
+ * @property {Record<string, unknown>} lanes the profile's lanes, {} with no profile
+ * @property {string} locale the profile's locale, 'en' with no profile
+ * @property {string[]} warnings profile names the lock does not know
+ */
+
+/**
+ * The MANDATORY floor: every skill named in a MANDATORY row of <root>/CLAUDE.md. An unreadable
+ * constitution gives an empty floor, because V17 owns that failure. With no knownNames the lock's skill
+ * names are read here, and with no readable lock only hyphenated names count, the shape prose cannot fake.
+ * @param {string} root the repository root
+ * @param {Set<string> | null} [knownNames] the lock's skill names, when the caller has already read them
+ * @returns {Set<string>}
+ */
 function parseMandatory(root, knownNames) {
-  // MANDATORY rows of the constitution's Skill Bindings table, Skill(s) cell. Candidate tokens
-  // are validated against the KNOWN skill names (the lock's keys) rather than required to carry
-  // a hyphen: the old hyphen-only regex silently dropped `pptx` and `pdf` from the guarded set
-  // for two weeks while CLAUDE.md line 315 claimed they were covered (found 2026-08-31 by this
-  // resolver's own sabotage test). Filtering by known names is what keeps prose words in the
-  // cell ("then", "and") from being read as skills. If CLAUDE.md is unreadable the floor is
-  // empty - V17 owns that failure.
+  /** @type {Set<string>} */
   const out = new Set();
   let text;
   try {
-    text = fs.readFileSync(path.join(root, 'CLAUDE.md'), 'utf8');
+    text = fs.readFileSync(path.join(root, CONSTITUTION), 'utf8');
   } catch {
     return out;
   }
   let known = knownNames;
   if (!known) {
     try {
-      known = new Set(Object.keys(JSON.parse(fs.readFileSync(path.join(root, 'skills-lock.json'), 'utf8')).skills || {}));
+      known = new Set(Object.keys(readJsonHeaderless(path.join(root, LOCK_NAME)).skills || {}));
     } catch {
-      known = null; // no lock: fall back to hyphenated-only, the shape prose cannot fake
+      known = null;
     }
   }
-  const rows = text.split(/\r?\n/).filter((l) => /^\|.*\|\s*MANDATORY\s*\|/.test(l));
+  const rows = text.split(/\r?\n/).filter((l) => MANDATORY_ROW.test(l));
   for (const row of rows) {
     const cells = row.split('|').map((c) => c.trim());
     if (cells.length < 4) continue;
-    for (const tok of cells[2].match(/[a-z0-9]+(?:-[a-z0-9]+)*/g) || []) {
-      // Keep a token if it is a KNOWN skill name OR carries the hyphenated skill shape. The
-      // union matters: filtering by known names alone would let a MANDATORY row naming an
-      // un-vendored hyphenated skill silently drop out of the floor, which is precisely the
-      // dead-end V17 exists to fail on. (Found by this suite's own S7b.)
-      if ((known && known.has(tok)) || /-/.test(tok)) out.add(tok);
+    for (const tok of cells[SKILLS_CELL].match(NAME_TOKEN) || []) {
+      if (known?.has(tok) || /-/.test(tok)) out.add(tok);
     }
   }
   return out;
 }
 
+/**
+ * This machine's profile as parsed JSON, or null when it is absent or cannot be read or parsed.
+ * @param {string} root the repository root
+ * @returns {any}
+ */
 function readProfile(root) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(root, PROFILE_REL), 'utf8'));
-  } catch {
-    return null; // no profile = pure template defaults; every install before 2026-08-31 is here
-  }
+  return readJsonHeaderless(path.join(root, PROFILE_REL), { ifUnreadable: null });
 }
 
+/**
+ * Which skills are awake and which parked here: the lock, then this machine's profile, then the
+ * MANDATORY floor. Throws the raw read or parse error on an unreadable lock, and an Error naming the
+ * skill when the profile or the lock parks a MANDATORY one.
+ * @param {{ root: string }} options the repository root
+ * @returns {SkillState}
+ */
 function resolve({ root }) {
-  const lock = JSON.parse(fs.readFileSync(path.join(root, 'skills-lock.json'), 'utf8'));
+  const lock = readJsonHeaderless(path.join(root, LOCK_NAME));
   const names = Object.keys(lock.skills || {});
   const known = new Set(names);
-  const mandatory = parseMandatory(root);
+  const mandatory = parseMandatory(root, known);
+  /** @type {string[]} */
   const warnings = [];
 
-  const parked = new Set(names.filter((n) => lock.skills[n] && lock.skills[n].parked));
+  const parked = new Set(names.filter((n) => lock.skills[n]?.parked));
 
   const profile = readProfile(root);
   if (profile) {
@@ -119,7 +145,7 @@ function resolve({ root }) {
     }
   }
 
-  // The floor applies to the LOCK too: a template default must never park a MANDATORY skill.
+  // The floor holds for the template too: a lock default must never park a MANDATORY skill.
   for (const n of mandatory) {
     if (parked.has(n)) {
       throw new Error(
@@ -134,39 +160,36 @@ function resolve({ root }) {
     awake,
     parked,
     mandatory,
-    lanes: (profile && profile.lanes) || {},
-    locale: (profile && profile.locale) || 'en',
-    warnings,
+    lanes: profile?.lanes || {},
+    locale: profile?.locale || 'en',
+    warnings
   };
 }
 
-// ------------------------------------------------------------------------------------------------
-// THE LINK WRITER (2026-09-23). Two scripts create a .claude/skills/<name> link - bootstrap's
-// --repair-links and skills-park's --wake - and before this function each called fs.symlinkSync
-// with its own target expression. Both wrote the target ABSOLUTE, which is invisible on a laptop
-// (the links are gitignored there) and fatal online: the online .gitignore deliberately TRACKS
-// .claude/skills/, so the target text sits in a committed git blob. A real install on 2026-09-23
-// committed 114 links pointing at /home/user/alex-test/.agents/skills/<name>; every one of them is
-// dead in any clone whose path differs, which is every other owner, because a seed repo is named
-// after the person it belongs to.
-//
-// So the POSIX target is RELATIVE to the link's own directory (../../.agents/skills/<name>) and
-// forward-slashed, which is what a git symlink blob holds.
-//
-// WINDOWS IS THE EXCEPTION AND CANNOT BE OTHERWISE. A junction is the only link type Windows makes
-// without elevation, and Node normalises a junction's target to an absolute path; a plain relative
-// symlink raises EPERM on a machine without Developer Mode (measured on this checkout, 2026-09-23).
-// That costs nothing, because a Windows checkout has core.symlinks off and gitignores the link
-// directory, so an absolute target never leaves the machine that wrote it.
-//
-// Test: node scripts/tests/test-skill-links.mjs (the absolute target shown failing the contract
-// first, then the move test; L5 asserts neither writer keeps a symlinkSync call of its own).
+/**
+ * The target a link at <linkDir>/<name> gets: <storeDir>/<name>, absolute on Windows, relative to the
+ * link's own folder and forward-slashed everywhere else, which is what a committed git symlink holds.
+ * @param {string} linkDir the .claude/skills folder
+ * @param {string} storeDir the .agents/skills folder
+ * @param {string} name the skill
+ * @param {string} [platform] process.platform unless a test names another
+ * @returns {string}
+ */
 function skillLinkTarget(linkDir, storeDir, name, platform = process.platform) {
   const target = path.join(storeDir, name);
   if (platform === 'win32') return target;
   return path.relative(linkDir, target).split(path.sep).join('/');
 }
 
+/**
+ * Make the link <linkDir>/<name> to the skill's content: a junction on Windows, a symlink elsewhere.
+ * An existing link or folder at that path throws EEXIST, which is the caller's to handle.
+ * Test: node scripts/tests/test-skill-links.mjs
+ * @param {string} linkDir the .claude/skills folder
+ * @param {string} storeDir the .agents/skills folder
+ * @param {string} name the skill
+ * @returns {string} the link's path
+ */
 function linkSkill(linkDir, storeDir, name) {
   const dest = path.join(linkDir, name);
   const target = skillLinkTarget(linkDir, storeDir, name);

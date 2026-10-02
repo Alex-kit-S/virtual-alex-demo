@@ -26,8 +26,14 @@ Kit has a different set; the last table compares the two.
    events; and edits to Alex's own settings, commands, hooks, script library, workflows,
    `.mcp.json` and skill lock. Changes to those arrive only through `/update`.
 3. **The lane guard** (`scripts/untrusted-lane-guard.js`). Runs before every tool call in
-   sessions a Routine starts. It refuses `gh`, remote git, connector actions that send or delete,
-   writes to identity files, and web addresses in shell commands other than the machine itself.
+   sessions a Routine starts. It refuses the GitHub CLI's repository, pull request, issue, release,
+   workflow, secret, gist, search, API, auth, browse and extension commands; git commands that reach
+   a remote, including through an alias or a variable; curl, wget and the PowerShell web cmdlets even
+   to the machine itself, and inline python or node code that reaches the network; commands that
+   install, fetch or run a package (npm, npx, pip, winget and the like); connector
+   actions named as sending, replying, forwarding, sharing, submitting or deleting; writes to
+   identity files through Claude's file tools (a shell command that writes a file is not seen); and
+   other http and https addresses in shell commands other than the machine itself.
    In the Armed environment, where triage and the brief read mail, WebFetch and WebSearch are
    refused too, so a hostile email has nowhere to send what it reads. Every block is written to
    `outputs/logs/untrusted-lane-blocks.jsonl`.

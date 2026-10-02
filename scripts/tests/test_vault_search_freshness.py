@@ -1,111 +1,155 @@
 #!/usr/bin/env python3
-"""Before/after test for the vault_search freshness gate (feedback P1.5).
+"""scripts/tests/test_vault_search_freshness.py - a page written after the build is found by the next search.
 
-Bug: the nightly 21:35 FTS5 rebuild leaves an inverted staleness window. A fact captured
-after the rebuild is grep-able immediately but invisible to BM25 until the next night, so the
-better retrieval tool is the staler one.
+WHAT. The one case the freshness gate exists for. A nightly rebuild alone leaves a window in which a
+page written after it is findable by grep but missing from the BM25 index, so the better tool is the
+staler one. `search` closes that window by rebuilding first whenever the vault moved past the index.
+This file shows the window is real in the raw index, that `search` finds the new fact anyway, and
+that it rebuilds once and not again. Deleted, it would let through a gate that no longer notices a
+new page, a rebuild that leaves the build marker behind so every search rebuilds, and a search that
+exits non-zero while still printing its results. Every other trigger and blind spot of the gate is
+test_vault_search_rebuild.py's concern.
 
-Fix: `search` rebuilds whenever any vault file is newer than the index, so it can never return
-silently stale results.
+HOW. The real CLI as a child process against a temp vault, with ALEX_VAULT_DIR, ALEX_INDEX_DB and
+ALEX_READS_LOG set into the temp folder and every variable this file owns stripped from the inherited
+environment first. Every test builds the index from one page; three of the five then write a second
+page and read the build marker (meta.built_epoch) straight from the index file. A hit is recognised by
+its numbered result line, never by the query's words, because a miss echoes the query back.
 
-This test runs the real CLI (scripts/vault_search.py) against a throwaway sandbox vault via the
-ALEX_VAULT_DIR / ALEX_INDEX_DB env overrides, so the live index is never touched. It asserts:
-  BEFORE - a raw BM25 query against the un-rebuilt index misses a just-added fact (the bug exists).
-  AFTER  - `search` on the same state finds it, because the gate rebuilt first (the fix works).
+NEVER. Writes outside its own temp folder, the checkout's index and read log included, reaches a
+network or touches a scheduled task.
 
-Run: python scripts/tests/test_vault_search_freshness.py   (exit 0 = pass, 1 = fail)
+Usage: python scripts/tests/test_vault_search_freshness.py
+Exit: 0 every test passed - 1 a test failed
 """
+
 import os
+import re
 import sqlite3
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+import time
+import unittest
+from contextlib import closing
+from pathlib import Path, PurePosixPath
 
 HERE = Path(__file__).resolve()
 SCRIPT = HERE.parent.parent / "vault_search.py"
+OWNED_ENV = ("ALEX_VAULT_DIR", "ALEX_INDEX_DB", "ALEX_READS_LOG", "PYTHONIOENCODING", "PYTHONUTF8")
 
-OLD_TERM = "zebraxyz"     # present at build time
-NEW_TERM = "quokkaxyz"    # captured AFTER the build (the staleness window)
-
-fails = []
-
-
-def check(name, ok, detail=""):
-    print(f"  [{'PASS' if ok else 'FAIL'}] {name}" + (f" - {detail}" if detail else ""))
-    if not ok:
-        fails.append(name)
+OLD_TERM = "zebraxyz"  # on the page the index is built from
+NEW_TERM = "quokkaxyz"  # on the page written after the build
+# A result block opens with "<n>. <stored path>:<line>", then two spaces and the heading trail when
+# the hit has one. The stored path may hold a drive colon, so the line number is matched last.
+RESULT_LINE = re.compile(r"^\d+\. (.+?):\d+(?:  \[.*\])?$", re.MULTILINE)
 
 
-def run(env, *args):
-    return subprocess.run(
-        [sys.executable, str(SCRIPT), *args],
-        capture_output=True, text=True, env=env,
-    )
+class Result:
+    """One finished child process: its exit code, and stdout and stderr decoded with LF line ends."""
+
+    def __init__(self, cp: subprocess.CompletedProcess[bytes]) -> None:
+        self.code = cp.returncode
+        self.out = cp.stdout.decode("utf-8").replace("\r\n", "\n")
+        self.err = cp.stderr.decode("utf-8").replace("\r\n", "\n")
+
+    def hits(self) -> list[str]:
+        """The file name of every hit, in the order the search printed them."""
+        return [PurePosixPath(m.group(1)).name for m in RESULT_LINE.finditer(self.out)]
+
+    def __repr__(self) -> str:
+        return f"exit={self.code}\n--- stdout\n{self.out}--- stderr\n{self.err}"
 
 
-def main():
-    # ignore_cleanup_errors: on Windows the just-exited search subprocess can still hold the
-    # .db handle for a beat; the test result does not depend on cleanup succeeding.
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
-        tmp = Path(tmp)
-        vault = tmp / "vault"
-        vault.mkdir()
-        db = tmp / "index.db"
-        env = dict(os.environ, ALEX_VAULT_DIR=str(vault), ALEX_INDEX_DB=str(db))
+class StalenessWindow(unittest.TestCase):
+    """A vault with one page and a fresh index built from it; each test writes a second page."""
 
-        # 1. Seed the vault and build the index.
-        (vault / "a.md").write_text(
-            f"# Alpha\n\nThe {OLD_TERM} fact was known at build time.\n", encoding="utf-8")
-        r = run(env, "build")
-        check("initial build succeeds", r.returncode == 0, r.stderr.strip() or r.stdout.strip())
-        check("index db created", db.exists())
+    def setUp(self) -> None:
+        # ignore_cleanup_errors: on Windows a child that just exited can hold the db handle for a beat,
+        # and no result here depends on the cleanup.
+        td = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(td.cleanup)
+        root = Path(td.name).resolve()
+        self.vault = root / "vault"
+        self.vault.mkdir()
+        self.db = root / "index.db"
+        self.log = root / "reads.jsonl"
+        (self.vault / "a.md").write_text(f"# Alpha\n\nThe {OLD_TERM} fact was known at build time.\n", encoding="utf-8")
+        built = self.vs("build")
+        self.assertEqual(built.code, 0, built)
+        self.assertTrue(self.db.exists(), "the build made no index file")
 
-        # 2. Baseline: the old fact is findable.
-        r = run(env, "search", OLD_TERM)
-        check("build-time fact is findable", OLD_TERM in r.stdout.lower() or "1." in r.stdout,
-              r.stdout.strip()[:80])
+    def vs(self, *args: str) -> Result:
+        """Run vault_search.py with args against this test's vault, index and read log."""
+        env = {k: v for k, v in os.environ.items() if k not in OWNED_ENV}
+        env.update(ALEX_VAULT_DIR=str(self.vault), ALEX_INDEX_DB=str(self.db), ALEX_READS_LOG=str(self.log))
+        return Result(subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, env=env, timeout=120))
 
-        # 3. Capture a NEW fact after the build (this is the post-21:35 staleness window).
-        newfile = vault / "b.md"
-        newfile.write_text(
-            f"# Beta\n\nThe {NEW_TERM} fact was captured after the nightly rebuild.\n",
-            encoding="utf-8")
-        # Guarantee its mtime is strictly newer than the recorded build epoch.
-        con = sqlite3.connect(db)
-        built_epoch = float(con.execute(
-            "SELECT val FROM meta WHERE key='built_epoch'").fetchone()[0])
-        con.close()
-        check("new file mtime is newer than the index", newfile.stat().st_mtime > built_epoch,
-              f"mtime={newfile.stat().st_mtime:.3f} built={built_epoch:.3f}")
+    def built_epoch(self) -> float:
+        """The build marker the gate compares page mtimes against, read from the index file itself."""
+        with closing(sqlite3.connect(self.db)) as con:
+            row = con.execute("SELECT val FROM meta WHERE key='built_epoch'").fetchone()
+        self.assertIsNotNone(row, "the build wrote no built_epoch row, so the gate has no boundary to compare with")
+        return float(row[0])
 
-        # 4. BEFORE (bug reproduced): a raw BM25 query against the un-rebuilt index misses it.
-        con = sqlite3.connect(db)
-        rows = con.execute(
-            'SELECT path FROM chunks WHERE chunks MATCH ?', (f'"{NEW_TERM}"',)).fetchall()
-        con.close()
-        check("BEFORE: raw index misses the new fact (staleness window exists)", rows == [],
-              f"rows={rows}")
+    def capture_after_the_build(self) -> Path:
+        """Write the second page, and prove it is newer than the build, as the gate needs it to be.
 
-        # 5. AFTER (fix): the gated `search` finds it, having rebuilt because the vault changed.
-        r = run(env, "search", NEW_TERM)
-        found = "b.md" in r.stdout
-        rebuilt = "rebuilding" in r.stderr.lower()
-        check("AFTER: search finds the new fact", found, r.stdout.strip()[:80])
-        check("AFTER: the gate rebuilt before searching", rebuilt, r.stderr.strip()[:80])
+        A write right after the build can land in the SAME clock tick as built_epoch (Windows'
+        time.time() ticks as coarsely as 15.6 ms on a default-resolution host), so the mtime the
+        filesystem stamps it with is not reliably greater than built. Set it explicitly a little past
+        the marker instead of depending on the write's own timing: never a whole second ahead, which
+        would meet D22 (a future mtime rebuilds every search) and make the no-second-rebuild test fail.
+        Then wait until the clock is past that mtime: on a fast machine the next search's rebuild can
+        start within 0.05 s of the first build, and a rebuild that starts before the page's mtime leaves
+        the page newer than its own marker, so the search after it would rebuild again."""
+        page = self.vault / "b.md"
+        page.write_text(f"# Beta\n\nThe {NEW_TERM} fact was captured after the nightly rebuild.\n", encoding="utf-8")
+        built = self.built_epoch()
+        mtime = built + 0.05
+        os.utime(page, (mtime, mtime))
+        self.assertGreater(
+            page.stat().st_mtime,
+            built,
+            f"the new page is not newer than the index: mtime={mtime:.3f} built={built:.3f}",
+        )
+        while time.time() <= mtime:
+            time.sleep(0.01)
+        return page
 
-        # 6. No-op guarantee: a second search with nothing changed does NOT rebuild.
-        r = run(env, "search", NEW_TERM)
-        check("stable index does not rebuild on every search",
-              "rebuilding" not in r.stderr.lower(), r.stderr.strip()[:80])
+    def test_a_fact_known_at_build_time_is_found(self) -> None:
+        r = self.vs("search", OLD_TERM)
+        self.assertEqual(r.code, 0, r)
+        self.assertEqual(r.hits(), ["a.md"], r)
 
-    print()
-    if fails:
-        print(f"RESULT: FAIL ({len(fails)} failing: {', '.join(fails)})")
-        return 1
-    print("RESULT: PASS (freshness gate closes the staleness window)")
-    return 0
+    def test_the_raw_index_misses_a_fact_captured_after_the_build(self) -> None:
+        self.capture_after_the_build()
+        with closing(sqlite3.connect(self.db)) as con:
+            rows = con.execute("SELECT path FROM chunks WHERE chunks MATCH ?", (f'"{NEW_TERM}"',)).fetchall()
+        self.assertEqual(rows, [], "the window this file is about did not open")
+
+    def test_the_next_search_rebuilds_first_and_finds_it(self) -> None:
+        self.capture_after_the_build()
+        r = self.vs("search", NEW_TERM)
+        self.assertEqual(r.code, 0, r)
+        self.assertEqual(r.hits(), ["b.md"], r)
+        self.assertIn("rebuilding", r.err.lower(), r)
+
+    def test_a_search_after_that_rebuild_does_not_rebuild_again(self) -> None:
+        self.capture_after_the_build()
+        self.vs("search", NEW_TERM)
+        r = self.vs("search", NEW_TERM)
+        self.assertEqual(r.code, 0, r)
+        self.assertNotIn("rebuilding", r.err.lower(), r)
+
+    def test_every_search_logs_its_read_inside_the_sandbox(self) -> None:
+        # The checkout's own read log is the default, so a run that forgot ALEX_READS_LOG would append
+        # a row there on every search. Each search this file makes must land here instead.
+        for _ in range(2):
+            self.assertEqual(self.vs("search", OLD_TERM).code, 0)
+        self.assertTrue(self.log.exists(), "no search wrote the sandbox read log")
+        self.assertEqual(len(self.log.read_bytes().splitlines()), 2)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    unittest.main(verbosity=2)

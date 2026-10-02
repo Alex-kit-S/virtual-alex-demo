@@ -11,7 +11,8 @@ Today is the date `date -u` prints: run it first and use nothing else as the clo
 
 - One repository is attached and its hooks loaded: the guard in its ROUTINE mode (this is the
   Routine environment: WebFetch and WebSearch are open because they are this job's whole data
-  layer; every write to the rules, every send, every `gh` and every remote git command is denied),
+  layer; every write to the rules, every send, every `gh`, every remote git command and every
+  package install is denied),
   the autosave (every file write commits and pushes `main`) and the commit gate. If the first
   screen lacked `---DISPATCH-CONTEXT---`, the hooks did not load: write nothing, and end with the
   close below using `--status BLOCKED --reason "hooks did not load"`.

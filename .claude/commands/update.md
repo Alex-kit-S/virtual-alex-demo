@@ -251,7 +251,7 @@ node scripts/run-migrations.js
 ```
 
 The contract at the top of `scripts/run-migrations.js` holds unchanged: run once, never fail the
-update, a decline is not recorded as applied and stays pending, plain English out. Online, "back
+update, a decline stays pending (one by design is recorded not-applicable), plain English out. Online, "back
 up before writing" is the commit before this one (`PRE`); a migration that writes `soul.md` is the
 ONE writer that may reach it, and only under that contract. `system/migrations-applied.json` is
 tracked here, so the applied ids go into this update's commit. Quote what it printed.

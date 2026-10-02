@@ -1,27 +1,32 @@
-// scripts/lib/render-changelog.mjs - CHANGELOG.md is the render of system/template-changelog.jsonl.
+// @ts-check
+// scripts/lib/render-changelog.mjs - CHANGELOG.md and VERSION, rendered from system/template-changelog.jsonl.
 //
-// WHAT. The template's human changelog. Every template build appends one JSON row to
-// system/template-changelog.jsonl (scripts/build-online-template.mjs, --push). This turns those rows
-// into CHANGELOG.md, newest build first, and checks that a tree's CHANGELOG.md is exactly that
-// render. The markdown is never a source: it is generated on every build, so it cannot say anything
-// the rows do not.
+// WHAT. The template's human changelog and its one-line version marker. Every template build appends one
+// JSON row to system/template-changelog.jsonl (scripts/build-online-template.mjs); this module turns those
+// rows into CHANGELOG.md, newest build first, and into VERSION, which names the build a tree is: the
+// support bundle's `cat VERSION` answer, and the line scripts/lib/install-state.js parses. It also checks
+// that a tree's two rendered files say exactly what its rows say. Neither file is ever a source: both are
+// written again on every build, so neither can say anything the rows do not.
 //
-// HOW. renderChangelog(jsonlText) returns the markdown. Rows from build 24 on carry their number;
-// the older rows carry none and are numbered by position, the rule nextBuild() in the generator
-// already enforces. writeChangelog(root) writes <root>/CHANGELOG.md from <root>/system/... and
-// returns the paths it wrote. checkTree(root) returns every problem as a string (empty = agree):
-// the two files must both exist or both be absent, and the markdown must equal the render byte for
-// byte, line endings aside. scripts/tests/test-changelog.mjs runs checkTree in the tree it ships in.
+// HOW. parseRows(text) parses the rows and numbers them by position. Newer rows also carry their number,
+// and one that disagrees with its position is refused, the rule the generator's nextBuild() enforces.
+// renderChangelog(text) returns the markdown and renderVersion(text) the VERSION line, which names the
+// newest build, its day and its Kit commit. writeChangelog(root) writes <root>/CHANGELOG.md and
+// <root>/VERSION from <root>/system/template-changelog.jsonl and returns the tree paths it wrote, or []
+// when the tree has no jsonl. checkTree(root) returns every disagreement as one sentence (none = they
+// agree): CHANGELOG.md and the jsonl must both exist or both be absent, and each rendered file must equal
+// its render byte for byte, line endings aside. scripts/tests/test-changelog.mjs runs checkTree in the
+// tree it ships in. The Kit's own VERSION is the laptop release marker and a drop row online; only a
+// generated tree's VERSION is this render.
 //
-// VERSION (2026-09-24, fleet Fix A, review finding F44). The same rows also render VERSION, one line
-// naming the build the tree is, its date and the Kit commit it was built from, so the support bundle's
-// `cat VERSION` answers which build an owner is on. The Kit's own VERSION is the laptop release marker
-// and a drop row online; a generated tree's VERSION is this render, and checkTree holds it to that.
+// NEVER. Reads the clock or the environment: the same rows always render the same bytes. Writes the
+// jsonl: the generator is its one writer. Guesses a row that does not parse: the changelog is the build
+// history, and a guessed row is a false one. Knowingly keeps the defects
+// scripts/tests/test-render-changelog-contract.mjs pins (R3-L9, R3-L10, R3-L11): writeChangelog writes
+// CHANGELOG.md before an empty jsonl fails VERSION, a malformed row field renders as confident prose, and
+// an empty jsonl is a valid CHANGELOG.md and a fatal VERSION.
 //
-// NEVER. Never reads the clock or the environment, so the same rows always render the same bytes.
-// Never edits the jsonl: the generator is its one writer. Never tolerates a row that does not
-// parse: the changelog is the build history, and a guessed row is a false one.
-'use strict';
+// Usage: module only
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,6 +34,12 @@ import path from 'node:path';
 export const CHANGELOG_MD = 'CHANGELOG.md';
 export const CHANGELOG_JSONL = 'system/template-changelog.jsonl';
 export const VERSION_FILE = 'VERSION';
+
+// How many characters of a Kit commit a render shows.
+const SHORT_SHA = 12;
+// A row's `at` read to the minute for a heading, and to the day for VERSION.
+const AT_MINUTE = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/;
+const AT_DAY = /^(\d{4}-\d{2}-\d{2})/;
 
 const INTRO = [
   '# Changelog',
@@ -39,15 +50,58 @@ const INTRO = [
   '',
   'Sensitive files are the ones that change how Alex behaves: settings, commands, hooks and their',
   'libraries, workflows, Routine orders and `CLAUDE.md`. `/update` names them before it asks for',
-  'your yes.',
+  'your yes.'
 ];
 
-/** The rows, parsed, each with its build number. Throws on a row that does not parse. */
+/**
+ * One build as the generator wrote it, numbered by its position in the jsonl. Every other field comes
+ * from the file unchecked, so each is read defensively where it is printed.
+ * @typedef {object} ChangelogRow
+ * @property {number} build 1 for the first row
+ * @property {unknown} [at] the build time, an ISO string
+ * @property {unknown} [changed] how many files changed since the previous build
+ * @property {unknown} [files] how many files the tree holds
+ * @property {unknown} [flagged] the sensitive paths among the changed ones
+ * @property {unknown} [kit_commit] the Kit commit the tree was built from
+ * @property {unknown} [kit_dirty] true when the Kit had uncommitted changes
+ * @property {unknown} [previous_template_commit] null on the first build
+ */
+
+/** @param {string} text */
+const toLf = (text) => text.replace(/\r\n/g, '\n');
+
+/**
+ * The first SHORT_SHA characters of a commit, or null when it is not a non-empty string.
+ * @param {unknown} sha
+ */
+const shortSha = (sha) => (typeof sha === 'string' && sha ? sha.slice(0, SHORT_SHA) : null);
+
+/**
+ * A heading's date: the row's day and minute in UTC, or "date unknown", never a guess.
+ * @param {unknown} at
+ */
+function when(at) {
+  const m = AT_MINUTE.exec(String(at || ''));
+  return m ? `${m[1]} ${m[2]} UTC` : 'date unknown';
+}
+
+/**
+ * The rows, parsed, each with its build number. Throws on a row that does not parse, and on a numbered
+ * row away from its position.
+ * @param {string} jsonlText
+ * @returns {ChangelogRow[]}
+ */
 export function parseRows(jsonlText) {
-  const lines = String(jsonlText || '').replace(/\r\n/g, '\n').split('\n').filter((l) => l.trim());
+  const lines = toLf(String(jsonlText || ''))
+    .split('\n')
+    .filter((l) => l.trim());
   return lines.map((l, i) => {
     let row;
-    try { row = JSON.parse(l); } catch { throw new Error(`${CHANGELOG_JSONL} row ${i + 1} is not JSON; the changelog will not guess what it said`); }
+    try {
+      row = JSON.parse(l);
+    } catch {
+      throw new Error(`${CHANGELOG_JSONL} row ${i + 1} is not JSON; the changelog will not guess what it said`);
+    }
     if (row.build !== undefined && row.build !== i + 1) {
       throw new Error(`${CHANGELOG_JSONL} row ${i + 1} says build ${row.build}; a row was deleted or inserted`);
     }
@@ -55,39 +109,46 @@ export function parseRows(jsonlText) {
   });
 }
 
-const when = (at) => {
-  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(String(at || ''));
-  return m ? `${m[1]} ${m[2]} UTC` : 'date unknown';
-};
-const short = (sha) => (typeof sha === 'string' && sha ? `\`${sha.slice(0, 12)}\`` : 'unknown');
-
-/** The markdown for a whole jsonl text. Deterministic: same rows, same bytes. */
+/**
+ * The markdown for a whole jsonl text. Deterministic: the same rows give the same bytes.
+ * @param {string} jsonlText
+ */
 export function renderChangelog(jsonlText) {
   const rows = parseRows(jsonlText);
   const out = [...INTRO];
   for (const r of rows.slice().reverse()) {
     const flagged = Array.isArray(r.flagged) ? r.flagged : [];
-    out.push('', `## Build ${r.build} (${when(r.at)})`, '');
-    out.push(r.previous_template_commit
+    const kit = shortSha(r.kit_commit);
+    const size = r.previous_template_commit
       ? `- ${r.changed} of ${r.files} files changed.`
-      : `- The first build: ${r.files} files.`);
-    out.push(`- Sensitive files: ${flagged.length ? flagged.map((p) => `\`${p}\``).join(', ') : 'none'}.`);
-    out.push(`- Built from Kit commit ${short(r.kit_commit)}${r.kit_dirty ? ', with uncommitted changes in the Kit' : ''}.`);
+      : `- The first build: ${r.files} files.`;
+    const sensitive = flagged.length ? flagged.map((p) => `\`${p}\``).join(', ') : 'none';
+    const dirty = r.kit_dirty ? ', with uncommitted changes in the Kit' : '';
+    out.push('', `## Build ${r.build} (${when(r.at)})`, '', size);
+    out.push(`- Sensitive files: ${sensitive}.`);
+    out.push(`- Built from Kit commit ${kit ? `\`${kit}\`` : 'unknown'}${dirty}.`);
   }
   return `${out.join('\n')}\n`;
 }
 
-/** VERSION for a whole jsonl text: the newest build, its date and its Kit commit, one line. */
+/**
+ * VERSION for a whole jsonl text: the newest build, its day and its Kit commit, on one line.
+ * @param {string} jsonlText
+ */
 export function renderVersion(jsonlText) {
   const rows = parseRows(jsonlText);
   if (!rows.length) throw new Error(`${CHANGELOG_JSONL} has no rows, so there is no build to name`);
   const r = rows[rows.length - 1];
-  const day = /^(\d{4}-\d{2}-\d{2})/.exec(String(r.at || ''));
-  const kit = typeof r.kit_commit === 'string' && r.kit_commit ? r.kit_commit.slice(0, 12) : 'unknown';
+  const day = AT_DAY.exec(String(r.at || ''));
+  const kit = shortSha(r.kit_commit) ?? 'unknown';
   return `Virtual Alex template build ${r.build}, ${day ? day[1] : 'date unknown'}, from Kit commit ${kit}\n`;
 }
 
-/** Writes <root>/CHANGELOG.md and <root>/VERSION when the jsonl exists there. Returns the tree paths written. */
+/**
+ * Writes <root>/CHANGELOG.md and <root>/VERSION when the jsonl exists there.
+ * @param {string} root the tree
+ * @returns {string[]} the tree paths written, or [] when there is no jsonl
+ */
 export function writeChangelog(root) {
   const src = path.join(root, CHANGELOG_JSONL);
   if (!fs.existsSync(src)) return [];
@@ -97,7 +158,24 @@ export function writeChangelog(root) {
   return [CHANGELOG_MD, VERSION_FILE];
 }
 
-/** Every way <root>'s CHANGELOG.md and its jsonl disagree, as strings. Empty = they agree. */
+/**
+ * The sentence for a CHANGELOG.md that is not its render: the first line where the two differ.
+ * @param {string} have the file, LF line endings
+ * @param {string} want the render
+ */
+function firstDifference(have, want) {
+  const a = have.split('\n');
+  const b = want.split('\n');
+  const n = a.findIndex((l, i) => l !== b[i]);
+  const at = n === -1 ? Math.min(a.length, b.length) : n;
+  return `${CHANGELOG_MD} is not the render of ${CHANGELOG_JSONL}: line ${at + 1} reads ${JSON.stringify(a[at] ?? '(end of file)')}, the render reads ${JSON.stringify(b[at] ?? '(end of file)')}`;
+}
+
+/**
+ * Every way <root>'s CHANGELOG.md and VERSION disagree with its jsonl, one sentence each.
+ * @param {string} root the tree
+ * @returns {string[]} empty when they agree, or when neither CHANGELOG.md nor the jsonl exists
+ */
 export function checkTree(root) {
   const md = path.join(root, CHANGELOG_MD);
   const jsonl = path.join(root, CHANGELOG_JSONL);
@@ -112,15 +190,18 @@ export function checkTree(root) {
     const text = fs.readFileSync(jsonl, 'utf8');
     want = renderChangelog(text);
     wantVersion = renderVersion(text);
-  } catch (e) { return [e.message]; }
+  } catch (e) {
+    return [/** @type {Error} */ (e).message];
+  }
   const verFile = path.join(root, VERSION_FILE);
-  const haveVersion = fs.existsSync(verFile) ? fs.readFileSync(verFile, 'utf8').replace(/\r\n/g, '\n') : null;
-  const problems = haveVersion === wantVersion ? [] : [`${VERSION_FILE} is not the render of ${CHANGELOG_JSONL}: it reads ${JSON.stringify(haveVersion)}, the render reads ${JSON.stringify(wantVersion)}`];
-  const have = fs.readFileSync(md, 'utf8').replace(/\r\n/g, '\n');
+  const haveVersion = fs.existsSync(verFile) ? toLf(fs.readFileSync(verFile, 'utf8')) : null;
+  const problems =
+    haveVersion === wantVersion
+      ? []
+      : [
+          `${VERSION_FILE} is not the render of ${CHANGELOG_JSONL}: it reads ${JSON.stringify(haveVersion)}, the render reads ${JSON.stringify(wantVersion)}`
+        ];
+  const have = toLf(fs.readFileSync(md, 'utf8'));
   if (have === want) return problems;
-  const a = have.split('\n');
-  const b = want.split('\n');
-  const n = a.findIndex((l, i) => l !== b[i]);
-  const at = n === -1 ? Math.min(a.length, b.length) : n;
-  return [...problems, `${CHANGELOG_MD} is not the render of ${CHANGELOG_JSONL}: line ${at + 1} reads ${JSON.stringify(a[at] ?? '(end of file)')}, the render reads ${JSON.stringify(b[at] ?? '(end of file)')}`];
+  return [...problems, firstDifference(have, want)];
 }

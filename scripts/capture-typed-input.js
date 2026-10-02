@@ -1,83 +1,148 @@
 #!/usr/bin/env node
-/*
- * capture-typed-input.js - auto-capture every typed user message to a local raw transcript,
- * so the soul.md "My Words" harvest never depends on Alex remembering to do it mid-session.
- *
- * This is the TYPED-channel twin of the voice loop's save_transcript() in
- * work/voice/alex_voice.py. The voice side was already guaranteed code; the typed side was only
- * a standing rule (could be skipped under load). This closes that gap (wired 2026-07-07).
- *
- * Wired as a UserPromptSubmit hook in .claude/settings.json. It runs on every prompt submit.
- *
- * HARD RULES (a log write must never harm the owner's message):
- *   - Never write to stdout. UserPromptSubmit stdout is injected into the model context; anything
- *     printed here would silently pollute the conversation. Only ever touch the transcript file.
- *   - Never throw, never exit non-zero. Exit code 2 would BLOCK/erase the owner's prompt. Always exit 0.
- *   - outputs/ is gitignored, so these transcripts are local-only (same privacy tier as voice).
- *
- * Kept verbatim: no cleanup. The imperfections (ESL-direct phrasing, run-ons, dropped -s) ARE the
- * signal the corpus wants, per soul.md's voice-transcription rule.
+// @ts-check
+// scripts/capture-typed-input.js - saves every message the owner types to a raw transcript for the day.
+//
+// WHAT. The owner's own words are the soul corpus, and the My Words harvest in soul.md reads them back from
+// here. This hook writes each typed message to the day's transcript as the owner typed it, so the harvest
+// never depends on Alex remembering to save a line mid-session. It is the typed twin of the voice
+// transcripts.
+//
+// HOW. Claude Code runs it as the UserPromptSubmit hook in both settings files, with the event's JSON on
+// stdin, and only the prompt field is read. An empty prompt, or stdin that is not JSON, is dropped. A
+// prompt that opens with / or < is a slash command or a harness wrapper, not prose, and is dropped too;
+// when it does not look like one (a name after the slash, a tag after the bracket), one line with its
+// length goes to outputs/logs/typed-capture-skips.log, so a line of prose dropped by mistake can be found.
+// Any other prompt becomes one bullet, "- [HH:MM] <text>", appended to outputs/typed/transcripts/<day>.md
+// under the header the file is created with. Line breaks and runs of spaces and tabs become one space and
+// nothing else changes: the imperfections are the signal the corpus wants. The day and the time are the
+// machine's local ones. A transcript that cannot be written gets one FAILED line on stderr and one row in
+// outputs/logs/typed-capture-errors.log. Neither log line creates outputs/logs/, so on a tree without that
+// folder both are lost, as the tests pin today. Every path resolves from this file's folder, never from
+// CLAUDE_PROJECT_DIR. The root and the two-digit pad are written here rather than taken from repo-root.js
+// and render-templates.js: under standard 3.6 a sibling that failed to load would end this hook in a
+// silent exit 0 that loses the owner's words, and its tests and the hook-contract test run it copied alone.
+//
+// NEVER. Writes to stdout: UserPromptSubmit stdout is injected into the model's context. Throws or exits
+// non-zero: a blocking exit erases the owner's prompt, so every path ends in exit 0, and a failed log line
+// is dropped without a word. Loads a module that is not a builtin (standard 3.6). Changes a word of the
+// prompt. Writes a transcript outside outputs/typed/transcripts/, which both trees' .gitignore keep out of
+// git.
+//
+// Usage: node scripts/capture-typed-input.js < <UserPromptSubmit event JSON>
+// Exit: 0 always, whatever the input, the prompt or the disk
+'use strict';
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+const REPO = path.join(__dirname, '..');
+const TRANSCRIPTS = path.join(REPO, 'outputs', 'typed', 'transcripts');
+const SKIPS_LOG = path.join(REPO, 'outputs', 'logs', 'typed-capture-skips.log');
+const ERRORS_LOG = path.join(REPO, 'outputs', 'logs', 'typed-capture-errors.log');
+
+/** A slash command: the slash, a name, then whitespace or the end. */
+const COMMAND = /^\/[\w-]+(\s|$)/;
+/** A harness wrapper: the bracket, then a tag name, a comment, or a closing tag. */
+const WRAPPER = /^<[\w!/-]/;
+
+/**
+ * @param {number} n
+ * @returns {string} n in two digits, zero-padded
  */
+const pad = (n) => String(n).padStart(2, '0');
 
-const fs = require('fs');
-const path = require('path');
+/**
+ * The machine's local day and minute, as every line this hook writes names them.
+ * @returns {[string, string]} ['YYYY-MM-DD', 'HH:MM']
+ */
+function localStamp() {
+  const now = new Date();
+  return [
+    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    `${pad(now.getHours())}:${pad(now.getMinutes())}`
+  ];
+}
 
-function main(raw) {
-  let prompt = '';
+/**
+ * The trimmed prompt of a UserPromptSubmit event, or '' for stdin that is not JSON or a prompt that is not
+ * a string.
+ * @param {string} raw
+ * @returns {string}
+ */
+function readPrompt(raw) {
   try {
-    prompt = (JSON.parse(raw || '{}').prompt || '').trim();
-  } catch (_) {
-    return; // unparseable stdin -> drop silently
+    const { prompt } = JSON.parse(raw || '{}');
+    return typeof prompt === 'string' ? prompt.trim() : '';
+  } catch {
+    return '';
   }
-  if (!prompt) return;                  // empty submit
+}
+
+/**
+ * Appends one line to a log and drops it on any failure, because a log line must never cost the prompt.
+ * @param {string} file
+ * @param {string} line
+ */
+function appendLogLine(file, line) {
+  try {
+    fs.appendFileSync(file, line, 'utf8');
+  } catch {
+    // the disk refused the log line; the prompt goes on regardless
+  }
+}
+
+/**
+ * Appends the prompt to the day's transcript, creating the folder and the header first; a failure is
+ * reported on stderr and in the error log, never thrown.
+ * @param {string} prompt
+ * @param {string} day
+ * @param {string} time
+ */
+function writeTranscript(prompt, day, time) {
+  const file = path.join(TRANSCRIPTS, `${day}.md`);
+  try {
+    fs.mkdirSync(TRANSCRIPTS, { recursive: true });
+    if (!fs.existsSync(file)) {
+      const header = `# Typed transcript ${day} (raw typed messages, for soul.md My Words harvest)\n\n`;
+      fs.writeFileSync(file, header, 'utf8');
+    }
+    const line = prompt
+      .replace(/\r?\n/g, ' ')
+      .replace(/[ \t]+/g, ' ')
+      .trim();
+    fs.appendFileSync(file, `- [${time}] ${line}\n`, 'utf8');
+  } catch (caught) {
+    const err = /** @type {NodeJS.ErrnoException} */ (caught);
+    process.stderr.write(`capture-typed-input: transcript write FAILED (${err.code || err.message})\n`);
+    appendLogLine(ERRORS_LOG, `${day} ${time} ${err.code || ''} ${String(err.message).slice(0, 200)}\n`);
+  }
+}
+
+/** @param {string} raw the event JSON, as read from stdin */
+function main(raw) {
+  const prompt = readPrompt(raw);
+  if (!prompt) return;
+  const [day, time] = localStamp();
   if (prompt.startsWith('/') || prompt.startsWith('<')) {
-    // Slash-command / harness-wrapper messages are not the owner's prose - dropped. BUG-18 fix (2026-07-15):
-    // if the message does NOT look like a real command/wrapper it may be genuine prose being lost
-    // from the corpus, so breadcrumb it - NEVER to the transcript (keeps the corpus clean), NEVER to
-    // stdout (HARD RULE), just a local skips log so a dropped line is at least discoverable.
-    const looksLikeCommand = /^\/[\w-]+(\s|$)/.test(prompt);
-    const looksLikeWrapper = /^<[\w!/-]/.test(prompt);
-    if (!looksLikeCommand && !looksLikeWrapper) {
-      try {
-        const d = new Date(); const p = (n) => String(n).padStart(2, '0');
-        const st = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-        fs.appendFileSync(path.join(__dirname, '..', 'outputs', 'logs', 'typed-capture-skips.log'),
-          `${st} dropped-maybe-prose len=${prompt.length}\n`, 'utf8');
-      } catch (_) { /* never harm the prompt */ }
+    if (!COMMAND.test(prompt) && !WRAPPER.test(prompt)) {
+      appendLogLine(SKIPS_LOG, `${day} ${time} dropped-maybe-prose len=${prompt.length}\n`);
     }
     return;
   }
-
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const hm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
-  const dir = path.join(__dirname, '..', 'outputs', 'typed', 'transcripts');
-  const file = path.join(dir, `${day}.md`);
-  try {
-    fs.mkdirSync(dir, { recursive: true });
-    if (!fs.existsSync(file)) {
-      fs.writeFileSync(file, `# Typed transcript ${day} (raw typed messages, for soul.md My Words harvest)\n\n`, 'utf8');
-    }
-    // one bullet per message; collapse internal newlines so a multi-line paste stays a single entry,
-    // words otherwise untouched (verbatim).
-    const line = prompt.replace(/\r?\n/g, ' ').replace(/[ \t]+/g, ' ').trim();
-    fs.appendFileSync(file, `- [${hm}] ${line}\n`, 'utf8');
-  } catch (err) {
-    // Fail VISIBLE, never fatal (c4, upgrade P1 2026-07-12): a locked file or full disk must not
-    // silently eat corpus days. stderr surfaces in hook debug output; the breadcrumb log gives the
-    // Monday sweep / a human something to find. Still exit 0 - the prompt is never harmed.
-    process.stderr.write(`capture-typed-input: transcript write FAILED (${err.code || err.message})\n`);
-    try {
-      fs.appendFileSync(path.join(__dirname, '..', 'outputs', 'logs', 'typed-capture-errors.log'),
-        `${day} ${hm} ${err.code || ''} ${String(err.message).slice(0, 200)}\n`, 'utf8');
-    } catch (_) { /* disk truly gone; stderr was the last resort */ }
-  }
+  writeTranscript(prompt, day, time);
 }
 
 let raw = '';
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (c) => { raw += c; });
-process.stdin.on('end', () => { try { main(raw); } catch (_) { /* never harm the prompt */ } process.exit(0); });
+process.stdin.on('data', (chunk) => {
+  raw += chunk;
+});
+process.stdin.on('end', () => {
+  try {
+    main(raw);
+  } catch {
+    // nothing here throws by design; if something does, the prompt still goes on
+  }
+  process.exit(0);
+});
 process.stdin.on('error', () => process.exit(0));

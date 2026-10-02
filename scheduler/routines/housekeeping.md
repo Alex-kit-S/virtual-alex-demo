@@ -11,9 +11,9 @@ You are running unattended as `housekeeping` on Virtual Alex. Stay on `main`; ne
 branch. Today is the date `date -u` prints: run it first and use nothing else as the clock.
 
 - One repository is attached and its hooks loaded: the guard in its ROUTINE mode (the Routine
-  environment: every write to the rules, every send, every `gh`, every remote git command and
-  every URL whose host is not on the lane allowlist is denied), the autosave (every file write
-  commits and pushes `main`) and the commit gate. If the first screen lacked
+  environment: every write to the rules, every send, every `gh`, every remote git command, every
+  package install and every URL whose host is not on the lane allowlist is denied), the autosave
+  (every file write commits and pushes `main`) and the commit gate. If the first screen lacked
   `---DISPATCH-CONTEXT---`, the hooks did not load: write nothing, and end with the close below
   using `--status BLOCKED --reason "hooks did not load"`.
 - Never run `git` yourself. The autosave (which you may call directly as `bash scripts/autosave.sh`)

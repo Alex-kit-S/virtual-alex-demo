@@ -7,6 +7,12 @@ Zero new dependencies: uses **`node:sqlite`** (built into Node v24) - no better-
 `package.json`, no native build. `facts.db` is DERIVED and gitignored (rides the 21:45 encrypted
 vault backup); delete it and `node system/recall/harvest.js` rebuilds it.
 
+## Where it runs
+A laptop organ. On a laptop install every file below is present and the nightly chain runs it. Online
+(Virtual Alex) only this README and `lib/lessons.js` ship: the close-out script parses L-lines with it.
+The rest is a drop row (`laptop-only`) in `system/kit-manifest.json`, each file named by its exact path,
+so a cloud session holds no recall hook, no harvester and no fact ledger.
+
 ## Layout
 ```
 system/recall/
@@ -35,10 +41,12 @@ unchanged value is a no-op, so a supersession is always a real change (which kee
 ## Run it
 ```
 node system/recall/harvest.js          # populate/refresh facts.db (nightly 21:35, in run-vault-index.ps1)
-node scripts/facts-check.js            # C21: harvest fresh, then diff docs vs facts (Monday sweep)
-node scripts/facts-check.js --no-harvest   # check as-is (nightly chain already harvested)
-node scripts/lesson-harvest.js         # harvest Close-Out L-lines (nightly 21:35)
 ```
+The same nightly chain runs `scripts/lesson-harvest.js`, which harvests Close-Out L-lines into the
+lessons table. The Monday sweep runs C21, `scripts/facts-check.js`: it harvests fresh, then diffs the
+docs against the facts, and its `--no-harvest` flag checks as-is when the nightly chain already
+harvested. Both are laptop scripts, named here by path and never as a command line: this README
+ships online, and portability check P6 fails a command line naming a script the tree does not hold.
 
 ## Direction law (why this is not the V6 anti-pattern)
 facts.db is derived from STRUCTURED sources (manifest.json, validate-alex.js registry, check.ps1
